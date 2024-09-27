@@ -22,29 +22,64 @@ La estructura general del proyecto es la siguiente:
 
 external-marketplace-protocol-channels/
 ├── app/
-│   ├── main.py                 # Punto de entrada de la aplicación
+│   ├── main.py                   # Punto de entrada de la aplicación
+│   │
 │   ├── api/
 │   │   └── routes/
-│   │       ├── notifications.py # Módulo para manejar notificaciones de VTEX
-│   │       └── ui.py            # Módulo para manejar la interfaz de usuario
-│   ├── services/                # Lógica de negocio e interacción con VTEX
-│   ├── models/
-│   │   ├── schemas/             # Esquemas de validación de datos
-│   │   └── database_models.py   # Modelos de la base de datos
-│   ├── db/
-│   │   └── database.py          # Configuración de la base de datos
-│   ├── templates/               # Plantillas HTML para la UI
-│   ├── static/                  # Archivos estáticos (CSS, JS, imágenes)
+│   │       ├── notifications.py   # Módulo para manejar notificaciones
+│   │       └── ui.py              # Módulo para manejar la interfaz de usuario
+│   │
 │   ├── config/
-│   │   └── settings.py          # Configuración y manejo de variables de entorno
-│   └── utils/                   # Funciones auxiliares (logging, manejo de errores)
-├── tests/                       # Pruebas unitarias y de integración
+│   │   └── settings.py            # Configuración y manejo de variables de entorno
+│   │
+│   ├── db/
+│   │   └── database.py            # Configuración y conexión de la base de datos
+│   │
+│   ├── models/
+│   │   ├── schemas/               # Esquemas de validación y estructura de datos
+│   │   │   ├── brand_schema.py    # Esquema para datos de marcas
+│   │   │   ├── category_schema.py # Esquema para datos de categorías
+│   │   │   ├── inventory_schema.py# Esquema para datos de inventario
+│   │   │   ├── order_schema.py    # Esquema para datos de pedidos
+│   │   │   └── product_schema.py  # Esquema para datos de productos
+│   │   └── database_models.py     # Definición de modelos de la base de datos
+│   │
+│   ├── services/
+│   │   ├── brand_service.py       # Lógica de negocio para marcas
+│   │   ├── category_service.py    # Lógica de negocio para categorías
+│   │   ├── inventory_service.py   # Lógica de negocio para inventario
+│   │   ├── order_service.py       # Lógica de negocio para pedidos
+│   │   ├── product_service.py     # Lógica de negocio para productos
+│   │   └── vtex_api.py            # Servicio para integración con VTEX
+│   │
+│   ├── static/                    # Archivos estáticos (CSS, JS, imágenes)
+│   │   ├── css/                   # Archivos de estilos CSS
+│   │   ├── images/                # Imágenes utilizadas en la aplicación
+│   │   └── js/                    # Archivos JavaScript
+│   │
+│   ├── templates/                 # Plantillas HTML para la interfaz de usuario
+│   │   ├── base.html              # Plantilla base
+│   │   ├── index.html             # Página principal
+│   │   ├── orders.html            # Página para visualizar pedidos
+│   │   └── products.html          # Página para visualizar productos
+│   │
+│   └── utils/
+│       ├── error_handling.py      # Módulo para manejo de errores
+│       └── logging.py             # Configuración de logging para la aplicación
+│   
 ├── docs/
-│   ├── ARCHITECTURE.md          # Documentación de la arquitectura del proyecto
-│   └── README.md                # Descripción del proyecto y cómo ejecutarlo
-├── .env                         # Variables de entorno (no se sube al repositorio)
-├── .gitignore                   # Archivos y directorios que deben ser ignorados por Git
-└── requirements.txt             # Lista de dependencias del proyecto
+│   ├── ARCHITECTURE.md            # Documentación de la arquitectura del proyecto
+│   └── README.md                  # Documentación general del proyecto
+│   
+├── tests/                         # Pruebas unitarias y de integración
+│   ├── test_app.py                # Pruebas para la aplicación principal
+│   └── test_env.py                # Pruebas para el entorno y configuración
+│   
+├── .env                           # Variables de entorno (no se sube al repositorio)
+│   
+├── .gitignore                     # Archivos y directorios que deben ser ignorados por Git
+│   
+└── requirements.txt               # Lista de dependencias del proyecto
 
 
 ## Flujos de Datos
