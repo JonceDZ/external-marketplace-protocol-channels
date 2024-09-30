@@ -48,7 +48,7 @@ La estructura del proyecto se ha detallado en ARCHITECTURE.md. Consulta ese arch
 ### Servicio de Logging
 El servicio de logging está diseñado para cumplir con las especificaciones de VTEX, permitiendo que el marketplace externo registre y exponga los logs de interacción con VTEX.
 
-Modelo de Datos:*LogEntry* incluye los campos requeridos por VTEX.
-Endpoint de Logs: Expuesto en /{vtexaccount}/logs/, acepta los parámetros DateAt y status.
-Formato de Mensajes: Los logs siguen el estándar definido por VTEX, incluyendo códigos de evento y mensajes amigables.
-Uso en la Aplicación: Los logs se registran utilizando la función *log_event* en los puntos clave de interacción con VTEX.
+* Modelo de Datos:`LogEntry` incluye los campos requeridos por VTEX.
+* Endpoint de Logs: Expuesto en `/{vtexaccount}/logs/`, acepta los parámetros `DateAt` y `status`.
+* Formato de Mensajes: Los logs siguen el estándar definido por VTEX, incluyendo códigos de evento y mensajes amigables.
+* Uso en la Aplicación: Los logs se registran utilizando la función `log_event` en los puntos clave de interacción con VTEX.
