@@ -1,0 +1,27 @@
+# Python
+.env
+__pycache__/
+*.pyc
+*.pyo
+external-marketplace-protocol-channels/venv/
+external-marketplace-protocol-channels/__pycache__/
+
+# macOS
+.DS_Store
+
+# Conda environment
+.conda/
+.condarc
+
+# Jupyter
+.ipynb_checkpoints/
+.jupyter/
+
+# General
+.vscode/
+
+# Log files
+*.log
+
+#BBDD
+vtex_marketplace.db
