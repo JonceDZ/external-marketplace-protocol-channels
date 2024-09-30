@@ -27,6 +27,7 @@ external-marketplace-protocol-channels/
 │   ├── api/
 │   │   └── routes/
 │   │       ├── notifications.py   # Módulo para manejar notificaciones
+│   │       ├── logs.py            # Módulo para obtener los logs
 │   │       └── ui.py              # Módulo para manejar la interfaz de usuario
 │   │
 │   ├── config/
