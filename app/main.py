@@ -1,3 +1,4 @@
+#from app.services.vtex_api import VTEXAPI
 from fastapi import FastAPI
 from app.api.routes import notifications, ui, logs  # Importa los módulos de rutas notifications y ui
 
@@ -15,3 +16,6 @@ app.include_router(logs.router, tags=["Logs"])  # Incluir el router de logs
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+#vtex_api = VTEXAPI()
+#vtex_api.validate_headers()
