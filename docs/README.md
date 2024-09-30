@@ -45,7 +45,10 @@ Para ver la documentación interactiva generada por FastAPI, visita: http://127.
 ### Estructura del Proyecto
 La estructura del proyecto se ha detallado en ARCHITECTURE.md. Consulta ese archivo para entender cómo está organizada la aplicación y cómo se integran los diferentes componentes.
 
-### Próximos Pasos
-1. Implementar la lógica de negocio completa para la integración con VTEX.
-2. Desarrollar y mejorar la interfaz de usuario.
-3. Realizar pruebas unitarias e integrales para garantizar la funcionalidad de la aplicación.
+### Servicio de Logging
+El servicio de logging está diseñado para cumplir con las especificaciones de VTEX, permitiendo que el marketplace externo registre y exponga los logs de interacción con VTEX.
+
+Modelo de Datos:*LogEntry* incluye los campos requeridos por VTEX.
+Endpoint de Logs: Expuesto en /{vtexaccount}/logs/, acepta los parámetros DateAt y status.
+Formato de Mensajes: Los logs siguen el estándar definido por VTEX, incluyendo códigos de evento y mensajes amigables.
+Uso en la Aplicación: Los logs se registran utilizando la función *log_event* en los puntos clave de interacción con VTEX.
