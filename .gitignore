@@ -24,4 +24,4 @@ external-marketplace-protocol-channels/__pycache__/
 *.log
 
 #BBDD
-vtex_marketplace.db
+*.db
