@@ -25,7 +25,7 @@ class VTEXAPI:
         }
 
     def get_sku_ids_by_sales_channel(self, sales_channel_id):
-        endpoint = f"{self.base_url}/api/catalog_system/pvt/sku/stockkeepingunitidsbysaleschannel/{sales_channel_id}"
+        endpoint = f"{self.base_url}/api/catalog_system/pvt/sku/stockkeepingunitidsbysaleschannel?sc={sales_channel_id}&page=1&pageSize=1000000" #Revisar las paginas y tamaño
         response = requests.get(endpoint, headers=self.headers)
         if response.status_code == 200:
             return response.json()  # Retorna una lista de SKU IDs
