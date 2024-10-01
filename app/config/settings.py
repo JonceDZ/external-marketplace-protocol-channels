@@ -7,6 +7,6 @@ class Settings(BaseSettings):
     vtex_api_url: str
 
     class Config:
-        env_file = ".env"
+        env_file = ".env" # Especifica que las variables se tomarán del archivo .env
 
 settings = Settings()
