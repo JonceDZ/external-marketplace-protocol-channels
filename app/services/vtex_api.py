@@ -8,6 +8,7 @@ class VTEXAPI:
         print("App Token:", self.app_token)
         print("Nombre de la cuenta:", self.account_name)
         print("Base URL:", self.base_url)
+        print("Trade Policy:", self.sales_channel_id)
         print("Headers:", self.headers)
         print('====================================================================================================================================================================================')
         
@@ -16,6 +17,7 @@ class VTEXAPI:
         self.app_token = settings.vtex_app_token
         self.account_name = settings.vtex_account_name
         self.environment = "vtexcommercestable"
+        self.sales_channel_id = settings.sales_channel_id
         self.base_url = f"https://{self.account_name}.{self.environment}.com.br"
         self.headers = {
             "Content-Type": "application/json",
