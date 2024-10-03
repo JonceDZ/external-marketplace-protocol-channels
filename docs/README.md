@@ -70,6 +70,7 @@ La aplicación cuenta con un servicio que realiza la carga inicial de productos 
 El modelo Product incluye los siguientes campos principales:
 
 * `sku_id`: Identificador único del SKU en VTEX.
+* `product_id`: Identificador único del producto en VTEX.
 * `name`: Nombre del producto.
 * `is_active`: Estado del SKU.
 * `price`: Precio obtenido de la simulación.
@@ -84,3 +85,33 @@ Parámetro: `sales_channel_id` (ID del canal de ventas para el que se desea real
 
 ### Validación y Manejo de Errores
 Si el SKU o el producto no cumplen con las validaciones, se registra un error y se continúa con el siguiente SKU.
+
+## Notificaciones de Nuevos Productos o Actualizaciones desde VTEX
+Además de la carga inicial de productos, la aplicación está preparada para recibir notificaciones desde VTEX cuando se crea o actualiza un producto o SKU.
+
+### Proceso de Recepción de Notificaciones
+* Cuando un nuevo producto o SKU se registra en VTEX, se envía una notificación al endpoint configurado.
+* La aplicación procesa esta notificación para actualizar o registrar la información del producto en el marketplace.
+* Se realizan las mismas validaciones que en la carga inicial, incluyendo la validación del estado del SKU, precio e inventario.
+
+### Campos Recibidos en la Notificación
+La notificación contiene los siguientes campos clave:
+
+* `idSKU`: ID del SKU en VTEX.
+* `productId`: ID del producto en VTEX.
+* `an`: Nombre de la cuenta del seller en VTEX.
+* `idAffiliate`: ID del afiliado generado automáticamente en la configuración.
+* `DateModified`: Fecha de la última modificación del producto.
+* `isActive`: Estado del producto (activo o inactivo).
+* `StockModified`: Indica si el inventario ha sido modificado.
+* `PriceModified`: Indica si el precio ha sido modificado.
+* `HasStockKeepingUnitModified`: Indica si los datos del SKU han sido modificados.
+* `HasStockKeepingUnitRemovedFromAffiliate`: Indica si el producto ya no está asociado con la política comercial.
+
+### Registro de Logs
+Cada notificación procesada genera un registro en el sistema de logs, donde se registra si la operación fue exitosa o si hubo algún error.
+
+### Endpoint para Recibir Notificaciones: 
+* Ruta: `/notifications/`
+* Método: `POST`
+* Descripción: Recibe notificaciones de VTEX sobre nuevos productos o actualizaciones de SKUs.
