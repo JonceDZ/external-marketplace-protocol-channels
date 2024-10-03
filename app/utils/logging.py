@@ -18,7 +18,7 @@ def log_event(operation_id, operation, direction, content_source, content_transl
     try:
         db_session = SessionLocal()
         log_entry = LogEntry(
-            id=operation_id,
+            OperationId=operation_id,
             Operation=operation,
             Direction=direction,
             ContentSource=content_source,
