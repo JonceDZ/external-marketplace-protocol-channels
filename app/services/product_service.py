@@ -39,6 +39,11 @@ def process_sku(sku_id, sales_channel_id):
         raise Exception(f"SKU {sku_id} no está asociado al canal de ventas {sales_channel_id}.")
     if not sku_data.get('IsProductActive'):
         raise Exception(f"Producto del SKU {sku_id} está inactivo.")
+    
+    # Obtener el ID del producto
+    product_id = sku_data.get('ProductId')
+    if not product_id:
+        raise Exception(f"El ID del producto no está disponible para el SKU {sku_id}.")
 
     # Simulación de fulfillment para obtener precio e inventario
     items = [{"id": str(sku_id), "quantity": 1, "seller": "1"}]  # Ajusta el seller ID si es necesario
@@ -48,7 +53,7 @@ def process_sku(sku_id, sales_channel_id):
     if not fulfillment_data.get('items'):
         raise Exception(f"No se pudo obtener información de precio e inventario para SKU {sku_id}.")
     item_info = fulfillment_data['items'][0]
-    price = item_info.get('price', 0) / 100  # Precio en la moneda local
+    price = item_info.get('sellingPrice', 0) / 100  # Precio en la moneda local - Toma el selling price!
     inventory = item_info.get('availability')
 
     # Almacenar o actualizar en la base de datos
@@ -57,6 +62,7 @@ def process_sku(sku_id, sales_channel_id):
     if existing_product:
         # Actualizar producto existente
         existing_product.name = sku_data.get('NameComplete')
+        existing_product.product_id = product_id  # Actualizar el ID del producto
         existing_product.is_active = sku_data.get('IsActive')
         existing_product.price = price
         existing_product.inventory = inventory
@@ -65,6 +71,7 @@ def process_sku(sku_id, sales_channel_id):
         # Crear nuevo producto
         new_product = Product(
             sku_id=sku_id,
+            product_id=product_id,  # Guardar el ID del producto
             name=sku_data.get('NameComplete'),
             is_active=sku_data.get('IsActive'),
             price=price,
@@ -86,3 +93,78 @@ def process_sku(sku_id, sales_channel_id):
         business_message=f"El SKU {sku_id} fue procesado exitosamente.",
         status="Success"
     )
+
+def process_notification(payload):
+    sku_id = payload.get('idSKU')
+    sales_channel_id = vtex_api.sales_channel_id  # Usamos el canal de ventas configurado
+
+    # Validaciones iniciales
+    if not sku_id:
+        raise Exception("SKU ID no proporcionado en la notificación")
+
+    # Procesar según los campos de la notificación
+    if payload.get('HasStockKeepingUnitModified', False):
+        # Si el SKU ha sido modificado o es nuevo, obtener detalles y actualizar/crear
+        process_sku(sku_id, sales_channel_id)
+
+    if payload.get('StockModified', False) or payload.get('PriceModified', False):
+        # Si el inventario o precio ha cambiado, realizar simulación de fulfillment y actualizar
+        update_price_and_inventory(sku_id, sales_channel_id)
+
+    if not payload.get('isActive', True):
+        # Si el producto ha sido desactivado, actualizar estado en la base de datos
+        deactivate_product(sku_id)
+
+    if payload.get('HasStockKeepingUnitRemovedFromAffiliate', False):
+        # Si el SKU ya no está asociado al canal de ventas, eliminar o desactivar el producto
+        remove_product_from_affiliate(sku_id)
+
+def update_price_and_inventory(sku_id, sales_channel_id):
+    # Realizar simulación de fulfillment para obtener precio e inventario actualizados
+    items = [{"id": str(sku_id), "quantity": 1, "seller": "1"}]  # Ajusta el seller ID si es necesario
+    fulfillment_data = vtex_api.simulate_fulfillment(items, sales_channel_id)
+
+    # Extraer precio e inventario
+    if not fulfillment_data.get('items'):
+        raise Exception(f"No se pudo obtener información de precio e inventario para SKU {sku_id}.")
+    item_info = fulfillment_data['items'][0]
+    price = item_info.get('sellingPrice', 0) / 100  # Precio en la moneda local
+    inventory = item_info.get('availability')
+
+    # Actualizar en la base de datos
+    db: Session = SessionLocal()
+    existing_product = db.query(Product).filter(Product.sku_id == sku_id).first()
+    if existing_product:
+        existing_product.price = price
+        existing_product.inventory = inventory
+        db.commit()
+    else:
+        # Si el producto no existe, podríamos decidir crearlo o registrar un error
+        db.close()
+        raise Exception(f"El SKU {sku_id} no existe en la base de datos.")
+    db.close()
+
+def deactivate_product(sku_id):
+    # Desactivar el producto en la base de datos
+    db: Session = SessionLocal()
+    existing_product = db.query(Product).filter(Product.sku_id == sku_id).first()
+    if existing_product:
+        existing_product.is_active = False
+        existing_product.inventory = 0  # Opcional: poner inventario en cero
+        db.commit()
+    else:
+        db.close()
+        raise Exception(f"El SKU {sku_id} no existe en la base de datos.")
+    db.close()
+
+def remove_product_from_affiliate(sku_id):
+    # Opcional: eliminar o desactivar el producto
+    db: Session = SessionLocal()
+    existing_product = db.query(Product).filter(Product.sku_id == sku_id).first()
+    if existing_product:
+        db.delete(existing_product)
+        db.commit()
+    else:
+        db.close()
+        raise Exception(f"El SKU {sku_id} no existe en la base de datos.")
+    db.close()
