@@ -72,7 +72,12 @@ El modelo Product incluye los siguientes campos principales:
 * `sku_id`: Identificador único del SKU en VTEX.
 * `product_id`: Identificador único del producto en VTEX.
 * `name`: Nombre del producto.
-* `is_active`: Estado del SKU.
+* `product_description`: Descripción del producto.
+* `brand_name`: Nombre de la marca del producto.
+* `category_id`: ID de la categoría del producto.
+* `category_name`: Nombre de la categoría del producto.
+* `image_url`: URL de la imagen del producto.
+* `is_active`: Estado del SKU (1 = sí está activo; 0 = no está activo).
 * `price`: Precio obtenido de la simulación.
 * `inventory`: Nivel de inventario obtenido de la simulación.
 
