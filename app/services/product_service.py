@@ -54,7 +54,7 @@ def process_sku(sku_id, sales_channel_id):
 
 
     # Obtener la categoría del SKU (última categoría en la jerarquía)
-    category_id, category_name = get_last_category(sku_data) ###############
+    category_id, category_name = get_last_category(sku_data)
 
     # Simulación de fulfillment para obtener precio e inventario
     items = [{"id": str(sku_id), "quantity": 1, "seller": "1"}]  # Ajusta el seller ID si es necesario
@@ -76,8 +76,8 @@ def process_sku(sku_id, sales_channel_id):
         existing_product.product_id = product_id
         existing_product.product_description = product_description
         existing_product.brand_name = brand_name
-        existing_product.category_id = category_id  ###########
-        existing_product.category_name = category_name  #############
+        existing_product.category_id = category_id
+        existing_product.category_name = category_name
         existing_product.image_url = image_url
         existing_product.is_active = sku_data.get('IsActive')
         existing_product.price = price
@@ -91,8 +91,8 @@ def process_sku(sku_id, sales_channel_id):
             name=sku_data.get('NameComplete'),
             product_description=product_description,
             brand_name=brand_name,
-            category_id=category_id,  ##############
-            category_name=category_name,  ###############
+            category_id=category_id,
+            category_name=category_name,
             image_url=image_url,
             is_active=sku_data.get('IsActive'),
             price=price,
@@ -114,7 +114,7 @@ def process_sku(sku_id, sales_channel_id):
         business_message=f"El SKU {sku_id} fue procesado exitosamente.",
         status="Success"
     )
-###############
+
 def get_last_category(sku_data):
     """
     Extrae la última categoría del campo ProductCategoryIds y encuentra su nombre en ProductCategories.
@@ -134,7 +134,6 @@ def get_last_category(sku_data):
     category_name = product_categories.get(last_category_id, "Categoría desconocida")
 
     return last_category_id, category_name
-##################
 
 def process_notification(payload):
     sku_id = payload.get('idSKU')
