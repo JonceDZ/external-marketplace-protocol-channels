@@ -6,7 +6,7 @@ class LogEntry(Base):
     __tablename__ = "logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    OperationId = Column(Integer, nullable=False) ############
+    OperationId = Column(Integer, nullable=False)
     Operation = Column(String, nullable=False)
     Direction = Column(String, nullable=False)
     ContentSource = Column(Text, nullable=True)
@@ -21,9 +21,13 @@ class Product(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     sku_id = Column(Integer, unique=True, index=True, nullable=False)
-    product_id = Column(Integer, nullable=False) ######################
+    product_id = Column(Integer, nullable=False)
     name = Column(String, nullable=False)
+    product_description = Column(String, nullable=True)
+    brand_name = Column(String, nullable=True)
+    category_id = Column(Integer)
+    category_name = Column(String)
+    image_url = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
     price = Column(Float, nullable=True)
     inventory = Column(Integer, nullable=True)
-    # Añade otros campos necesarios, como categorías, marcas, etc.
