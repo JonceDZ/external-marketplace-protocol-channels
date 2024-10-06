@@ -120,3 +120,79 @@ Cada notificación procesada genera un registro en el sistema de logs, donde se 
 * Ruta: `/notifications/`
 * Método: `POST`
 * Descripción: Recibe notificaciones de VTEX sobre nuevos productos o actualizaciones de SKUs.
+
+## Servicios de Ajuste de Precios e Inventario del Marketplace
+Para simular comportamientos típicos de un marketplace, la aplicación incluye servicios que permiten ajustar los precios de los productos y gestionar inventario propio del marketplace.
+
+### Funcionalidades Disponibles
+* **Aplicar Interés a Precios**: Ajusta los precios de los productos aplicando un porcentaje de interés definido por el usuario.
+* **Aplicar Descuento a Precios**: Aplica un porcentaje de descuento a los precios de los productos.
+* **Aplicar Impuesto a Precios**: Ajusta los precios de los productos aplicando un porcentaje de impuesto definido.
+* **Gestionar Inventario del Marketplace**: Permite establecer un inventario propio del marketplace para los SKUs.
+
+### Endpoints Disponibles
+
+#### 1. Aplicar Interés a Precios
+* **Ruta**: `/adjustments/apply_interest`
+* **Método**: `POST`
+* **Descripción**: 
+    * Aplica un porcentaje de interés a los precios de los SKUs especificados o a todos los SKUs si no se especifican.
+    * La tasa debe ser un valor decimal entre 0 y 1.
+    * Si `sku_ids` se omite, el interés se aplicará a todos los productos.
+
+**Body de la Solicitud**:
+```
+{
+  "rate": 0.05,          // Tasa de interés (ejemplo: 0.05 para 5%)
+  "sku_ids": [100, 200]  // Opcional: Lista de SKU IDs a los que se aplicará el interés. Si se omite, se aplica a todos los SKUs.
+}
+```
+
+#### 2. Aplicar Descuento a Precios
+* **Ruta**: `/adjustments/apply_discount`
+* **Método**: `POST`
+* **Descripción**:  
+    * Aplica un porcentaje de descuento a los precios de los SKUs especificados o a todos los SKUs si no se especifican.
+    * La tasa debe ser un valor decimal entre 0 y 1.
+    * Si `sku_ids` se omite, el interés se aplicará a todos los productos.
+
+**Body de la Solicitud**:
+```
+{
+  "rate": 0.10,          // Tasa de descuento (ejemplo: 0.10 para 10%)
+  "sku_ids": [100, 200]  // Opcional: Lista de SKU IDs a los que se aplicará el descuento. Si se omite, se aplica a todos los SKUs.
+}
+
+```
+
+#### 3. Aplicar Impuesto a Precios
+* **Ruta**: `/adjustments/apply_tax`
+* **Método**: `POST`
+* **Descripción**:   
+    * Aplica un porcentaje de impuesto a los precios de los SKUs especificados o a todos los SKUs si no se especifican.
+    * La tasa debe ser un valor decimal entre 0 y 1.
+    * Si `sku_ids` se omite, el interés se aplicará a todos los productos.
+
+**Body de la Solicitud**:
+```
+{
+  "rate": 0.08,          // Tasa de impuesto (ejemplo: 0.08 para 8%)
+  "sku_ids": [100, 200]  // Opcional: Lista de SKU IDs a los que se aplicará el impuesto. Si se omite, se aplica a todos los SKUs.
+}
+```
+
+#### 4. Establecer Inventario del Marketplace
+* **Ruta**: `/adjustments/set_marketplace_inventory`
+* **Método**: `POST`
+* **Descripción**:  
+    * Establece el inventario propio del marketplace para un SKU específico.
+    * Solo se puede actualizar un SKU por solicitud.
+    * El inventario debe ser un número entero positivo.
+
+**Body de la Solicitud**:
+```
+{
+  "sku_id": 100,         // ID del SKU al que se le establecerá el inventario.
+  "inventory": 50       // Cantidad de inventario a establecer.
+}
+```
