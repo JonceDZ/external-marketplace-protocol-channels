@@ -54,3 +54,17 @@ class VTEXAPI:
         else:
             raise Exception(f"Error en la simulación de fulfillment: {response.status_code} - {response.text}")
                
+    # Nueva función para la segunda simulación con datos de entrega
+    def simulate_fulfillment_with_delivery(self, items, postal_code, country, client_profile_data):
+        endpoint = f"{self.base_url}/api/checkout/pub/orderForms/simulation"
+        payload = {
+            "items": items,
+            "postalCode": postal_code,
+            "country": country,
+            "clientProfileData": client_profile_data
+        }
+        response = requests.post(endpoint, headers=self.headers, json=payload)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Error en la simulación de fulfillment con entrega: {response.status_code} - {response.text}")
