@@ -1,6 +1,6 @@
 from app.services.vtex_api import VTEXAPI
 from fastapi import FastAPI
-from app.api.routes import notifications, ui, logs, products, adjustments  # Importa los módulos de rutas notifications y ui
+from app.api.routes import notifications, ui, logs, products, adjustments, orders  # Importa los módulos de rutas notifications y ui
 from app.db.database import create_database 
 
 app = FastAPI(title="VTEX External Marketplace Integration") # Definición de la instancia principal.
@@ -14,6 +14,7 @@ app.include_router(ui.router, tags=["UI"])
 app.include_router(logs.router, tags=["Logs"])
 app.include_router(products.router, prefix="/products", tags=["Products"])
 app.include_router(adjustments.router, prefix="/adjustments", tags=["Adjustments"])
+app.include_router(orders.router, prefix="/orders", tags=["Orders"])
 
 # Punto de entrada de la aplicación
 if __name__ == "__main__":
