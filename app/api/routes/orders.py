@@ -5,7 +5,7 @@ from app.services.product_service import update_sla_info, create_order
 router = APIRouter()
 
 class SLARequest(BaseModel):
-    sku_id: int
+    sku_ids: list[int]
     postal_code: str
     country: str
     client_profile_data: dict
@@ -14,18 +14,21 @@ class SLARequest(BaseModel):
 def update_sla_endpoint(request: SLARequest):
     try:
         update_sla_info(
-            sku_id=request.sku_id,
+            sku_ids=request.sku_ids,
             postal_code=request.postal_code,
             country=request.country,
             client_profile_data=request.client_profile_data
         )
-        return {"message": f"SLA actualizado para SKU {request.sku_id}"}
+        return {"message": f"SLA actualizado para SKU {request.sku_ids}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-class OrderRequest(BaseModel):
+    
+class OrderItem(BaseModel):
     sku_id: int
     quantity: int
+
+class OrderRequest(BaseModel):
+    items: list[OrderItem]
     postal_code: str
     country: str
     client_profile_data: dict
@@ -35,8 +38,7 @@ class OrderRequest(BaseModel):
 def create_order_endpoint(request: OrderRequest):
     try:
         order_response = create_order(
-            sku_id=request.sku_id,
-            quantity=request.quantity,
+            items=request.items,
             client_profile_data=request.client_profile_data,
             postal_code=request.postal_code,
             country=request.country,
