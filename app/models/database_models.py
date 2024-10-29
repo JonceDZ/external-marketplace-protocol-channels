@@ -36,3 +36,18 @@ class Product(Base):
     discount_price = Column(Float, nullable=True)
     taxed_price = Column(Float, nullable=True)
     marketplace_inventory = Column(Integer, nullable=True)
+    sla_id = Column(String, nullable=True)
+    sla_delivery_channel = Column(String, nullable=True)
+    sla_list_price = Column(Float, nullable=True)
+    sla_seller = Column(String, nullable=True)
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(String, unique=True, index=True, nullable=False)
+    sku_id = Column(Integer, nullable=False)
+    quantity = Column(Integer, nullable=False)
+    total_price = Column(Float, nullable=False)
+    order_date = Column(DateTime, default=datetime.utcnow)
+    status = Column(String, default="Pending")
