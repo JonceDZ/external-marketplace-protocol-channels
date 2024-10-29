@@ -1,6 +1,6 @@
 from app.services.vtex_api import VTEXAPI
 from app.db.database import SessionLocal
-from app.models.database_models import Product, Order
+from app.models.database_models import Product, Order, OrderItem
 from app.utils.logging import log_event
 from sqlalchemy.orm import Session
 import requests
@@ -212,113 +212,167 @@ def remove_product_from_affiliate(sku_id):
         raise Exception(f"El SKU {sku_id} no existe en la base de datos.")
     db.close()
 
-def update_sla_info(sku_id, postal_code, country, client_profile_data):
-    # Preparar los items para la simulación
-    items = [{"id": str(sku_id), "quantity": 1, "seller": "1"}]  # Ajusta el seller ID si es necesario
-
-    # Realizar la simulación con datos de entrega
-    fulfillment_data = vtex_api.simulate_fulfillment_with_delivery(
-        items=items,
-        postal_code=postal_code,
-        country=country,
-        client_profile_data=client_profile_data
-    )
-
-    # Extraer los SLAs
-    if not fulfillment_data.get('logisticsInfo'):
-        raise Exception(f"No se pudo obtener información de logística para SKU {sku_id}.")
-
-    logistics_info = fulfillment_data['logisticsInfo'][0]  # Tomamos el primer elemento
-    slas = logistics_info.get('slas', [])
-
-    if not slas:
-        raise Exception(f"No hay SLAs disponibles para SKU {sku_id} en la dirección proporcionada.")
-
-    # Tomamos el primer SLA disponible (puedes ajustar esto según tus necesidades)
-    sla = slas[0]
-
-    # Extraer la información requerida
-    sla_id = sla.get('id')
-    sla_delivery_channel = sla.get('deliveryChannel')
-    sla_list_price = sla.get('listPrice', 0) / 100  # Dividir por 100 si está en centavos
-    sla_seller = fulfillment_data["items"][0].get("seller")
-    #sla_seller = sla.get('deliveryIds', [{}])[0].get('courierId', '')
-
-    # Actualizar en la base de datos
+def update_sla_info(sku_ids, postal_code, country, client_profile_data):
     db: Session = SessionLocal()
-    product = db.query(Product).filter(Product.sku_id == sku_id).first()
-    if product:
-        product.sla_id = sla_id
-        product.sla_delivery_channel = sla_delivery_channel
-        product.sla_list_price = sla_list_price
-        product.sla_seller = sla_seller
-        db.commit()
-        db.close()
-    else:
-        db.close()
-        raise Exception(f"El SKU {sku_id} no existe en la base de datos.")
+    try:
+        # Preparar los items para la simulación
+        items = [{"id": str(sku_id), "quantity": 1, "seller": "1"} for sku_id in sku_ids]  # Ajusta el seller ID si es necesario
 
-    # Registrar éxito en logs
-    log_event(
-        operation_id=sku_id,
-        operation="SLAUpdate",
-        direction="VTEX to Marketplace",
-        content_source=str(fulfillment_data),
-        content_translated="Información de SLA actualizada correctamente",
-        content_destination="",
-        business_message=f"El SKU {sku_id} tiene nuevos datos de SLA.",
-        status="Success"
-    )
+        # Realizar la simulación con datos de entrega
+        fulfillment_data = vtex_api.simulate_fulfillment_with_delivery(
+            items=items,
+            postal_code=postal_code,
+            country=country,
+            client_profile_data=client_profile_data
+        )
 
-def create_order(sku_id, quantity, client_profile_data, postal_code, country, address_data):
-    # Obtener el producto de la base de datos
+        # Verificar que 'logisticsInfo' esté presente
+        if not fulfillment_data.get('logisticsInfo'):
+            raise Exception("No se pudo obtener información de logística.")
+
+        logistics_info_list = fulfillment_data['logisticsInfo']
+
+        # Iterar sobre cada SKU y actualizar su información de SLA
+        for index, logistics_info in enumerate(logistics_info_list):
+            sku_id = sku_ids[index]
+            slas = logistics_info.get('slas', [])
+
+            if not slas:
+                # Registrar error en logs y continuar con el siguiente SKU
+                log_event(
+                    operation_id=sku_id,
+                    operation="SLAUpdate",
+                    direction="VTEX to Marketplace",
+                    content_source=str(fulfillment_data),
+                    content_translated="",
+                    content_destination="",
+                    business_message=f"No hay SLAs disponibles para SKU {sku_id} en la dirección proporcionada.",
+                    status="Error"
+                )
+                continue
+
+            # Tomamos el primer SLA disponible (puedes ajustar esto según tus necesidades)
+            sla = slas[0]
+
+            # Extraer la información requerida
+            sla_id = sla.get('id')
+            sla_delivery_channel = sla.get('deliveryChannel')
+            sla_list_price = sla.get('listPrice', 0) / 100  # Dividir por 100 si está en centavos
+            sla_seller = fulfillment_data["items"][index].get("seller")
+            #sla_seller = sla.get('deliveryIds', [{}])[0].get('courierId', '')
+
+            # Actualizar en la base de datos
+            product = db.query(Product).filter(Product.sku_id == sku_id).first()
+            if product:
+                product.sla_id = sla_id
+                product.sla_delivery_channel = sla_delivery_channel
+                product.sla_list_price = sla_list_price
+                product.sla_seller = sla_seller
+                db.commit()
+            else:
+                # Registrar error en logs y continuar
+                log_event(
+                    operation_id=sku_id,
+                    operation="SLAUpdate",
+                    direction="VTEX to Marketplace",
+                    content_source="",
+                    content_translated="",
+                    content_destination="",
+                    business_message=f"El SKU {sku_id} no existe en la base de datos.",
+                    status="Error"
+                )
+                continue
+
+            # Registrar éxito en logs
+            log_event(
+                operation_id=sku_id,
+                operation="SLAUpdate",
+                direction="VTEX to Marketplace",
+                content_source=str(fulfillment_data),
+                content_translated="Información de SLA actualizada correctamente",
+                content_destination="",
+                business_message=f"El SKU {sku_id} tiene nuevos datos de SLA.",
+                status="Success"
+            )
+
+    except Exception as e:
+        raise Exception(f"Error al actualizar información de SLA: {str(e)}")
+    finally:
+        db.close()
+
+def create_order(items, client_profile_data, postal_code, country, address_data):
     db: Session = SessionLocal()
-    product = db.query(Product).filter(Product.sku_id == sku_id).first()
-    if not product:
-        db.close()
-        raise Exception(f"El SKU {sku_id} no existe en la base de datos.")
 
-    # Verificar que el SLA esté disponible
-    if not product.sla_id or not product.sla_delivery_channel or not product.sla_list_price or not product.sla_seller:
-        db.close()
-        raise Exception(f"El SKU {sku_id} no tiene información de SLA actualizada.")
+    # Inicializar variables
+    order_items = []
+    logistics_info = []
+    total_price = 0
+    sla_seller = None  # Suponiendo que todos los ítems tienen el mismo vendedor
+
+    # Iterar sobre cada ítem para construir order_items y logistics_info
+    for index, item in enumerate(items):
+        sku_id = item.sku_id
+        quantity = item.quantity
+
+        # Obtener información del producto
+        product = db.query(Product).filter(Product.sku_id == sku_id).first()
+        if not product:
+            db.close()
+            raise Exception(f"El SKU {sku_id} no existe en la base de datos.")
+
+        # Verificar que la información de SLA esté disponible
+        if not product.sla_id or not product.sla_delivery_channel or not product.sla_list_price or not product.sla_seller:
+            db.close()
+            raise Exception(f"El SKU {sku_id} no tiene información de SLA actualizada.")
+
+        # Construir el ítem de la orden
+        order_items.append({
+            "id": str(sku_id),
+            "quantity": quantity,
+            "seller": product.sla_seller,
+            "price": int(product.price * 100)  # Precio en centavos
+        })
+
+        # Construir la información logística
+        logistics_info.append({
+            "itemIndex": index,
+            "selectedSla": product.sla_id,
+            "selectedDeliveryChannel": product.sla_delivery_channel,
+            "price": int(product.sla_list_price * 100)  # Precio en centavos
+        })
+
+        # Sumar al precio total
+        total_price += (product.price + product.sla_list_price) * quantity
+
+        # Establecer sla_seller si no está establecido
+        if sla_seller is None:
+            sla_seller = product.sla_seller
+        elif sla_seller != product.sla_seller:
+            # Manejar múltiples vendedores si es necesario
+            pass
 
     # Generar un marketplaceOrderGroup único
-    marketplace_order_group = f"{uuid.uuid4().hex[:8]}"  # "Transparent" + 8 caracteres hexadecimales
+    marketplace_order_group = f"Transparent{uuid.uuid4().hex[:8]}"
 
     # Construir el payload de la orden
     order_payload = {
-        "items": [
-            {
-                "id": str(sku_id),
-                "quantity": quantity,
-                "seller": product.sla_seller,
-                "price": int(product.price * 100)  # Multiplicar por 100 si se espera en centavos
-            }
-        ],
+        "items": order_items,
         "clientProfileData": client_profile_data,
         "shippingData": {
             "attachmentId": "shippingData",
             "address": address_data,
-            "logisticsInfo": [
-                {
-                    "itemIndex": 0,
-                    "selectedSla": product.sla_id,
-                    "selectedDeliveryChannel": product.sla_delivery_channel,
-                    "price": int(product.sla_list_price * 100)  # Multiplicar por 100 si se espera en centavos
-                }
-            ]
+            "logisticsInfo": logistics_info
         },
         "marketplaceOrderGroup": marketplace_order_group,
         "marketplaceServicesEndpoint": "https://yourmarketplace.com/mktp",  # Ajusta según tu configuración
-        "marketplacePaymentValue": int((product.price + product.sla_list_price) * quantity * 100)  # Precio total en centavos
+        "marketplacePaymentValue": int(total_price * 100)  # Precio total en centavos
     }
 
     # Realizar la solicitud para crear la orden
     endpoint = f"{vtex_api.base_url}/api/checkout/pvt/orders"
     params = {
         "sc": vtex_api.sales_channel_id,
-        "affiliateId": "EXT_MKTP"  # Reemplaza con tu ID de afiliado si es necesario
+        "affiliateId": "YOUR_AFFILIATE_ID"  # Reemplaza con tu ID de afiliado si es necesario
     }
     response = requests.put(endpoint, headers=vtex_api.headers, json=order_payload, params=params)
 
@@ -326,12 +380,21 @@ def create_order(sku_id, quantity, client_profile_data, postal_code, country, ad
         # Almacenar la orden en la base de datos
         new_order = Order(
             order_id=marketplace_order_group,
-            sku_id=sku_id,
-            quantity=quantity,
-            total_price=product.price * quantity,
+            total_price=total_price,
             status="Created"
         )
         db.add(new_order)
+        db.commit()
+        
+        # Almacenar los ítems de la orden
+        for item in items:
+            order_item = OrderItem(
+                order_id=new_order.id,
+                sku_id=item.sku_id,
+                quantity=item.quantity,
+                price=product.price
+            )
+            db.add(order_item)
         db.commit()
         db.close()
 
