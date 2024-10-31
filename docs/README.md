@@ -130,9 +130,9 @@ Para simular comportamientos típicos de un marketplace, la aplicación incluye 
 * **Aplicar Impuesto a Precios**: Ajusta los precios de los productos aplicando un porcentaje de impuesto definido.
 * **Gestionar Inventario del Marketplace**: Permite establecer un inventario propio del marketplace para los SKUs.
 
-### Endpoints Disponibles
+#### Endpoints Disponibles
 
-#### 1. Aplicar Interés a Precios
+##### 1. Aplicar Interés a Precios
 * **Ruta**: `/adjustments/apply_interest`
 * **Método**: `POST`
 * **Descripción**: 
@@ -148,7 +148,7 @@ Para simular comportamientos típicos de un marketplace, la aplicación incluye 
 }
 ```
 
-#### 2. Aplicar Descuento a Precios
+##### 2. Aplicar Descuento a Precios
 * **Ruta**: `/adjustments/apply_discount`
 * **Método**: `POST`
 * **Descripción**:  
@@ -165,7 +165,7 @@ Para simular comportamientos típicos de un marketplace, la aplicación incluye 
 
 ```
 
-#### 3. Aplicar Impuesto a Precios
+##### 3. Aplicar Impuesto a Precios
 * **Ruta**: `/adjustments/apply_tax`
 * **Método**: `POST`
 * **Descripción**:   
@@ -181,7 +181,7 @@ Para simular comportamientos típicos de un marketplace, la aplicación incluye 
 }
 ```
 
-#### 4. Establecer Inventario del Marketplace
+##### 4. Establecer Inventario del Marketplace
 * **Ruta**: `/adjustments/set_marketplace_inventory`
 * **Método**: `POST`
 * **Descripción**:  
@@ -196,3 +196,87 @@ Para simular comportamientos típicos de un marketplace, la aplicación incluye 
   "inventory": 50       // Cantidad de inventario a establecer.
 }
 ```
+
+## Órdenes:
+A continuación, se especificarán tofdos los puntos relacionados con el sistema de órdenes que opera en el marketplace.
+### Endpoint para obtener información de SLAs disponibles
+* **Ruta:** //orders/update_sla
+* **Método:** `POST`
+* **Descripción:** Permite actualizar los datos de SLA (Service Level Agreement) de múltiples SKUs en una sola solicitud. Esto incluye información como el tiempo estimado de entrega y el costo logístico, y se almacena en la base de datos local. La información obtenida a partir de esta simulación, será la utilizada en la generación de la orden.
+* **Parámetros de Solicitud:**
+```
+{
+    "sku_ids": [1, 2, 3],
+    "postal_code": "11001",
+    "country": "COL",
+    "client_profile_data": {
+        "email": "clark.kent@example.com",
+        "firstName": "Clark",
+        "lastName": "Kent",
+        "documentType": "cedulaCol",
+        "document": "12345678900",
+        "phone": "+573014444444"
+    }
+}
+```
+* **Respuesta:** Para cada SKU, el sistema actualiza los campos `sla_id`, `sla_delivery_channel`, `sla_list_price` y `sla_seller` en la base de datos local. Si algún SKU no tiene un SLA disponible o no está registrado, el error se registra en los logs y el proceso continúa con los siguientes SKUs.
+
+### Endpoint para crear órden con múltiples SKUs
+* **Ruta:** /orders/create_order
+* **Método:** `POST`
+* **Descripción:** Permite la creación de una orden en VTEX con múltiples SKUs en un solo pedido. La orden se registra en la base de datos local, y cada SKU queda registrado individualmente con su cantidad y precio. La información logística que se usa en esta solicitud será la que se obtuvo co n la API update_sla.
+* **Parámetros de Solicitud:**
+```
+{
+    "items": [
+        {
+            "sku_id": 1,
+            "quantity": 1
+        },
+        {
+            "sku_id": 2,
+            "quantity": 2
+        }
+    ],
+    "postal_code": "11001",
+    "country": "COL",
+    "client_profile_data": {
+        "email": "clark.kent@example.com",
+        "firstName": "Clark",
+        "lastName": "Kent",
+        "documentType": "cedulaCol",
+        "document": "12345678900",
+        "phone": "+573014444444"
+    },
+    "address_data": {
+        "addressType": "residential",
+        "receiverName": "Clark Kent",
+        "postalCode": "11001",
+        "city": "Bogotá",
+        "state": "Bogotá D.C.",
+        "country": "COL",
+        "street": "Calle Falsa",
+        "number": "123",
+        "neighborhood": "Centro",
+        "complement": "Apt 456",
+        "reference": "Cerca del parque"
+    }
+}
+```
+* **Respuesta:** Si la solicitud es exitosa (código HTTP 201), se devuelve el identificador de la orden y un mensaje de éxito. La orden y sus ítems quedan registrados en la base de datos. En caso de error, se devuelve el mensaje de error de la API de VTEX.
+
+### Modelo de Datos para Órdenes:
+
+* **Modelo Orders**
+  * **Campos Principales:**
+    * **order_id:** Identificador único de la orden en VTEX.
+    * **total_price:** Precio total de la orden.
+    * **items:** Relación con el modelo OrderItem, que contiene los ítems específicos de la orden.
+
+* **Modelo OrderItem**
+  * **Descripción:** Registra cada SKU asociado a una orden.
+  * **Campos:**
+    * **order_id:** ID de la orden a la que pertenece el ítem.
+    * **sku_id:** Identificador del SKU.
+    * **quantity:** Cantidad de unidades de este SKU en la orden.
+    * **price:** Precio de cada unidad del SKU.
