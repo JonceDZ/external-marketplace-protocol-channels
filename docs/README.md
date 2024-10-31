@@ -202,7 +202,7 @@ A continuación, se especificarán tofdos los puntos relacionados con el sistema
 ### Endpoint para obtener información de SLAs disponibles
 * **Ruta:** //orders/update_sla
 * **Método:** `POST`
-* **Descripción:** Permite actualizar los datos de SLA (Service Level Agreement) de múltiples SKUs en una sola solicitud. Esto incluye información como el tiempo estimado de entrega y el costo logístico, y se almacena en la base de datos local. La información obtenida a partir de esta simulación, será la utilizada en la generación de la orden.
+* **Descripción:** Actualiza los datos de SLA para múltiples SKUs en una sola solicitud. Recibe una lista de `sku_ids` y parámetros logísticos para actualizar la base de datos.
 * **Parámetros de Solicitud:**
 ```
 {
@@ -224,7 +224,7 @@ A continuación, se especificarán tofdos los puntos relacionados con el sistema
 ### Endpoint para crear órden con múltiples SKUs
 * **Ruta:** /orders/create_order
 * **Método:** `POST`
-* **Descripción:** Permite la creación de una orden en VTEX con múltiples SKUs en un solo pedido. La orden se registra en la base de datos local, y cada SKU queda registrado individualmente con su cantidad y precio. La información logística que se usa en esta solicitud será la que se obtuvo co n la API update_sla.
+* **Descripción:**  Crea una orden en VTEX con múltiples SKUs, almacenando la orden y cada ítem en la base de datos. Acepta una lista de objetos, cada uno representando un SKU con su `sku_id` y `quantity`. La información logística que se usa en esta solicitud será la que se obtuvo co n la API update_sla.
 * **Parámetros de Solicitud:**
 ```
 {
