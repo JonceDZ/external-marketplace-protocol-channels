@@ -32,11 +32,6 @@ class Product(Base):
     is_active = Column(Boolean, default=True)
     price = Column(Float, nullable=True)
     inventory = Column(Integer, nullable=True)
-    # Campos propios del mktp
-    interest_price = Column(Float, nullable=True)
-    discount_price = Column(Float, nullable=True)
-    taxed_price = Column(Float, nullable=True)
-    marketplace_inventory = Column(Integer, nullable=True)
     sla_id = Column(String, nullable=True)
     sla_delivery_channel = Column(String, nullable=True)
     sla_list_price = Column(Float, nullable=True)
