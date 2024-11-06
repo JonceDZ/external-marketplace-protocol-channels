@@ -333,6 +333,31 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data, user_id)
 def create_order(items, client_profile_data, postal_code, country, address_data, user_id):
     db: Session = SessionLocal()
 
+    # Obtener todos los CartItems del usuario
+    cart_items = db.query(CartItem).filter(CartItem.user_id == user_id).all()
+
+    # Verificar que el carrito no esté vacío
+    if not cart_items:
+        db.close()
+        raise Exception("El carrito está vacío. No se puede crear la orden.")
+
+    # Construir diccionarios SKU -> cantidad para el carrito y la solicitud
+    cart_items_dict = {cart_item.sku_id: cart_item.quantity for cart_item in cart_items}
+    request_items_dict = {item.sku_id: item.quantity for item in items}
+
+    # Validar que los SKUs en el carrito y en la solicitud sean los mismos
+    if set(cart_items_dict.keys()) != set(request_items_dict.keys()):
+        db.close()
+        raise Exception("Los SKUs en el carrito y en la solicitud no coinciden.")
+
+    # Validar que las cantidades para cada SKU coincidan
+    for sku_id in cart_items_dict.keys():
+        if cart_items_dict[sku_id] != request_items_dict[sku_id]:
+            db.close()
+            raise Exception(f"La cantidad para el SKU {sku_id} no coincide con el carrito.")
+
+    # Si las validaciones pasan, continuar con la creación de la orden
+
     # Inicializar variables
     order_items = []
     logistics_info = []
