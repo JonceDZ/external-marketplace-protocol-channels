@@ -1,6 +1,6 @@
 from app.services.vtex_api import VTEXAPI
 from app.db.database import SessionLocal
-from app.models.database_models import Product, Order, OrderItem
+from app.models.database_models import Product, Order, OrderItem, CartItem
 from app.utils.logging import log_event
 from sqlalchemy.orm import Session
 import requests
@@ -214,14 +214,14 @@ def remove_product_from_affiliate(sku_id):
 
 # app/services/product_service.py
 
-def update_sla_info(sku_ids, postal_code, country, client_profile_data):
+def update_sla_info(sku_ids, postal_code, country, client_profile_data, user_id):
     db: Session = SessionLocal()
     sku_responses = []
     try:
-        # Preparar los items para la simulación
-        items = [{"id": str(sku_id), "quantity": 1, "seller": "1"} for sku_id in sku_ids]  # Ajusta el seller ID si es necesario
+        # Prepare items for simulation
+        items = [{"id": str(sku_id), "quantity": 1, "seller": "1"} for sku_id in sku_ids]
 
-        # Realizar la simulación con datos de entrega
+        # Simulate fulfillment with delivery data
         fulfillment_data = vtex_api.simulate_fulfillment_with_delivery(
             items=items,
             postal_code=postal_code,
@@ -229,18 +229,18 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data):
             client_profile_data=client_profile_data
         )
 
-        # Verificar que 'logisticsInfo' esté presente
+        # Verify 'logisticsInfo' is present
         if not fulfillment_data.get('logisticsInfo'):
             raise Exception("No se pudo obtener información de logística.")
 
         logistics_info_list = fulfillment_data['logisticsInfo']
 
-        # Iterar sobre cada SKU y actualizar su información de SLA
+        # Iterate over each SKU and store SLA info in CartItem table
         for index, logistics_info in enumerate(logistics_info_list):
             sku_id = sku_ids[index]
             slas = logistics_info.get('slas', [])
 
-            # Verificar disponibilidad de inventario
+            # Check inventory availability
             availability = fulfillment_data['items'][index].get('availability')
             sku_message = f"SLA actualizado para SKU {sku_id}"
 
@@ -248,7 +248,7 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data):
                 sku_message += " - Este SKU no tiene inventario disponible."
 
             if not slas:
-                # Registrar error en logs y agregar mensaje al response
+                # Log error and add message to response
                 log_event(
                     operation_id=sku_id,
                     operation="SLAUpdate",
@@ -265,42 +265,45 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data):
                 })
                 continue
 
-            # Tomamos el primer SLA disponible (puedes ajustar esto según tus necesidades)
+            # Take the first available SLA (adjust as needed)
             sla = slas[0]
 
-            # Extraer la información requerida
+            # Extract required information
             sla_id = sla.get('id')
             sla_delivery_channel = sla.get('deliveryChannel')
-            sla_list_price = sla.get('listPrice', 0) / 100  # Dividir por 100 si está en centavos
+            sla_list_price = sla.get('listPrice', 0) / 100  # Convert from cents
             sla_seller = fulfillment_data["items"][index].get("seller")
+            price = fulfillment_data['items'][index].get('sellingPrice', 0) / 100
+            inventory = availability
 
-            # Actualizar en la base de datos
-            product = db.query(Product).filter(Product.sku_id == sku_id).first()
-            if product:
-                product.sla_id = sla_id
-                product.sla_delivery_channel = sla_delivery_channel
-                product.sla_list_price = sla_list_price
-                product.sla_seller = sla_seller
-                db.commit()
+            # Create or update CartItem in the database
+            cart_item = db.query(CartItem).filter(CartItem.sku_id == sku_id, CartItem.user_id == user_id).first()
+            if cart_item:
+                # Update existing CartItem
+                cart_item.quantity += 1  # Or set quantity based on user input
+                cart_item.sla_id = sla_id
+                cart_item.sla_delivery_channel = sla_delivery_channel
+                cart_item.sla_list_price = sla_list_price
+                cart_item.sla_seller = sla_seller
+                cart_item.price = price
+                cart_item.inventory = inventory
             else:
-                # Registrar error en logs y agregar mensaje al response
-                log_event(
-                    operation_id=sku_id,
-                    operation="SLAUpdate",
-                    direction="VTEX to Marketplace",
-                    content_source="",
-                    content_translated="",
-                    content_destination="",
-                    business_message=f"El SKU {sku_id} no existe en la base de datos.",
-                    status="Error"
+                # Create new CartItem
+                cart_item = CartItem(
+                    sku_id=sku_id,
+                    quantity=1,  # Or set quantity based on user input
+                    user_id=user_id,
+                    sla_id=sla_id,
+                    sla_delivery_channel=sla_delivery_channel,
+                    sla_list_price=sla_list_price,
+                    sla_seller=sla_seller,
+                    price=price,
+                    inventory=inventory
                 )
-                sku_responses.append({
-                    "sku_id": sku_id,
-                    "message": f"El SKU {sku_id} no existe en la base de datos."
-                })
-                continue
+                db.add(cart_item)
+            db.commit()
 
-            # Registrar éxito en logs
+            # Log success
             log_event(
                 operation_id=sku_id,
                 operation="SLAUpdate",
@@ -312,7 +315,7 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data):
                 status="Success"
             )
 
-            # Agregar mensaje al response
+            # Add message to response
             sku_responses.append({
                 "sku_id": sku_id,
                 "message": sku_message
@@ -323,65 +326,60 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data):
     finally:
         db.close()
 
-    # Devolver la lista de mensajes para cada SKU
+    # Return list of messages for each SKU
     return sku_responses
 
 
-def create_order(items, client_profile_data, postal_code, country, address_data):
+def create_order(items, client_profile_data, postal_code, country, address_data, user_id):
     db: Session = SessionLocal()
 
-    # Inicializar variables
+    # Initialize variables
     order_items = []
     logistics_info = []
     total_price = 0
-    sla_seller = None  # Suponiendo que todos los ítems tienen el mismo vendedor
+    sla_seller = None  # Assuming all items have the same seller
 
-    # Iterar sobre cada ítem para construir order_items y logistics_info
+    # Iterate over each item to build order_items and logistics_info
     for index, item in enumerate(items):
         sku_id = item.sku_id
         quantity = item.quantity
 
-        # Obtener información del producto
-        product = db.query(Product).filter(Product.sku_id == sku_id).first()
-        if not product:
+        # Get SLA and price information from CartItem
+        cart_item = db.query(CartItem).filter(CartItem.sku_id == sku_id, CartItem.user_id == user_id).first()
+        if not cart_item:
             db.close()
-            raise Exception(f"El SKU {sku_id} no existe en la base de datos.")
+            raise Exception(f"El SKU {sku_id} no existe en el carrito.")
 
-        # Verificar que la información de SLA esté disponible
-        if not product.sla_id or not product.sla_delivery_channel or not product.sla_list_price or not product.sla_seller:
-            db.close()
-            raise Exception(f"El SKU {sku_id} no tiene información de SLA actualizada.")
-
-        # Construir el ítem de la orden
+        # Build the order item
         order_items.append({
             "id": str(sku_id),
             "quantity": quantity,
-            "seller": product.sla_seller,
-            "price": int(product.price * 100)  # Precio en centavos
+            "seller": cart_item.sla_seller,
+            "price": int(cart_item.price * 100)  # Price in cents
         })
 
-        # Construir la información logística
+        # Build logistics info
         logistics_info.append({
             "itemIndex": index,
-            "selectedSla": product.sla_id,
-            "selectedDeliveryChannel": product.sla_delivery_channel,
-            "price": int(product.sla_list_price * 100)  # Precio en centavos
+            "selectedSla": cart_item.sla_id,
+            "selectedDeliveryChannel": cart_item.sla_delivery_channel,
+            "price": int(cart_item.sla_list_price * 100)  # Price in cents
         })
 
-        # Sumar al precio total
-        total_price += (product.price + product.sla_list_price) * quantity
+        # Add to total price
+        total_price += (cart_item.price + cart_item.sla_list_price) * quantity
 
-        # Establecer sla_seller si no está establecido
+        # Set sla_seller if not set
         if sla_seller is None:
-            sla_seller = product.sla_seller
-        elif sla_seller != product.sla_seller:
-            # Manejar múltiples vendedores si es necesario
+            sla_seller = cart_item.sla_seller
+        elif sla_seller != cart_item.sla_seller:
+            # Handle multiple sellers if necessary
             pass
 
-    # Generar un marketplaceOrderGroup único
+    # Generate a unique marketplaceOrderGroup
     marketplace_order_group = f"Transparent{uuid.uuid4().hex[:8]}"
 
-    # Construir el payload de la orden
+    # Build the order payload
     order_payload = {
         "items": order_items,
         "clientProfileData": client_profile_data,
@@ -391,20 +389,20 @@ def create_order(items, client_profile_data, postal_code, country, address_data)
             "logisticsInfo": logistics_info
         },
         "marketplaceOrderGroup": marketplace_order_group,
-        "marketplaceServicesEndpoint": "https://yourmarketplace.com/mktp",  # Ajusta según tu configuración
-        "marketplacePaymentValue": int(total_price * 100)  # Precio total en centavos
+        "marketplaceServicesEndpoint": "https://yourmarketplace.com/mktp",  # Adjust as needed
+        "marketplacePaymentValue": int(total_price * 100)  # Total price in cents
     }
 
-    # Realizar la solicitud para crear la orden
+    # Make the request to create the order
     endpoint = f"{vtex_api.base_url}/api/checkout/pvt/orders"
     params = {
         "sc": vtex_api.sales_channel_id,
-        "affiliateId": "EXT_MKTP"  # Reemplaza con tu ID de afiliado si es necesario
+        "affiliateId": "EXT_MKTP"  # Replace with your affiliate ID if necessary
     }
     response = requests.put(endpoint, headers=vtex_api.headers, json=order_payload, params=params)
 
-    if response.status_code == 201:
-        # Almacenar la orden en la base de datos
+    if response.status_code in [200, 201]:
+        # Store the order in the database
         new_order = Order(
             order_id=marketplace_order_group,
             total_price=total_price,
@@ -412,20 +410,25 @@ def create_order(items, client_profile_data, postal_code, country, address_data)
         )
         db.add(new_order)
         db.commit()
-        
-        # Almacenar los ítems de la orden
+
+        # Store the order items
         for item in items:
             order_item = OrderItem(
                 order_id=new_order.id,
                 sku_id=item.sku_id,
                 quantity=item.quantity,
-                price=product.price
+                price=cart_item.price  # Use price from cart_item
             )
             db.add(order_item)
         db.commit()
+
+        # Clear the CartItem entries for the SKUs in this order
+        for item in items:
+            db.query(CartItem).filter(CartItem.sku_id == item.sku_id, CartItem.user_id == user_id).delete()
+        db.commit()
         db.close()
 
-        # Registrar éxito en logs
+        # Log success
         log_event(
             operation_id=marketplace_order_group,
             operation="OrderCreation",
@@ -439,7 +442,7 @@ def create_order(items, client_profile_data, postal_code, country, address_data)
         return response.json()
     else:
         db.close()
-        # Registrar error en logs
+        # Log error
         log_event(
             operation_id=marketplace_order_group,
             operation="OrderCreation",
