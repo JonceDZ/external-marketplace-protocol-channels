@@ -432,7 +432,7 @@ def create_order(items, client_profile_data, postal_code, country, address_data,
     endpoint = f"{vtex_api.base_url}/api/checkout/pvt/orders"
     params = {
         "sc": vtex_api.sales_channel_id,
-        "affiliateId": "EXT_MKTP"  # Reemplaza con tu ID de afiliado si es necesario
+        "affiliateId": "MKT"  # Reemplaza con tu ID de afiliado si es necesario
     }
     response = requests.put(endpoint, headers=vtex_api.headers, json=order_payload, params=params)
 
