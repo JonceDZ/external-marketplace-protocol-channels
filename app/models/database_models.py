@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, Float, ForeignKey, JSON
 from datetime import datetime
 from sqlalchemy.orm import relationship
 from app.db.database import Base
@@ -42,19 +42,7 @@ class Order(Base):
     total_price = Column(Float, nullable=False)
     order_date = Column(DateTime, default=datetime.utcnow)
     status = Column(String, default="Pending")
-    # Relación con OrderItem
-    items = relationship("OrderItem", back_populates="order")
-
-class OrderItem(Base):
-    __tablename__ = "order_items"
-
-    id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey('orders.id'), nullable=False)
-    sku_id = Column(Integer, nullable=False)
-    quantity = Column(Integer, nullable=False)
-    price = Column(Float, nullable=False)
-    # Relación inversa con Order
-    order = relationship("Order", back_populates="items")
+    items = Column(JSON, nullable=False) 
 
 class CartItem(Base):
     __tablename__ = "cart_items"
