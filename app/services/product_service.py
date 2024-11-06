@@ -5,6 +5,9 @@ from app.utils.logging import log_event
 from sqlalchemy.orm import Session
 import requests
 import uuid
+import random
+import string
+from datetime import datetime, timezone, timedelta
 
 vtex_api = VTEXAPI()
 
@@ -478,3 +481,108 @@ def create_order(items, client_profile_data, postal_code, country, address_data,
             status="Error"
         )
         raise Exception(f"Error al crear la orden: {response.status_code} - {response.text}")
+
+def authorize_and_invoice_order(order_id):
+    db: Session = SessionLocal()
+    try:
+        # Obtener la orden de la base de datos
+        order = db.query(Order).filter(Order.order_id == order_id).first()
+        if not order:
+            raise Exception(f"La orden {order_id} no existe en la base de datos.")
+
+        # Autorizar la orden
+        authorize_order_in_vtex(order_id, order)
+
+        # Facturar la orden
+        invoice_order_in_vtex(order_id, order)
+
+        # Actualizar el estado de la orden en la base de datos
+        order.status = "Invoiced"
+        db.commit()
+
+        # Registrar éxito en logs
+        log_event(
+            operation_id=order_id,
+            operation="OrderAuthorizationAndInvoicing",
+            direction="Marketplace to VTEX",
+            content_source="",
+            content_translated="Orden autorizada y facturada exitosamente",
+            content_destination="",
+            business_message=f"La orden {order_id} fue autorizada y facturada exitosamente.",
+            status="Success"
+        )
+
+    except Exception as e:
+        db.close()
+        # Registrar error en logs
+        log_event(
+            operation_id=order_id,
+            operation="OrderAuthorizationAndInvoicing",
+            direction="Marketplace to VTEX",
+            content_source="",
+            content_translated="Error al autorizar o facturar la orden",
+            content_destination="",
+            business_message=f"Error al autorizar o facturar la orden MKT-{order_id}-01: {str(e)}",
+            status="Error"
+        )
+        raise Exception(f"Error al autorizar o facturar la orden: {str(e)}")
+    finally:
+        db.close()
+
+def authorize_order_in_vtex(order_id, order):
+    # Construir el payload para autorizar la orden
+    authorization_payload = {
+        "marketplaceOrderGroup": f"MKT-{order_id}-01",
+        "authorizationReceipt": {
+            "date": get_current_iso8601_datetime(),
+            "receipt": generate_random_string(10)
+        }
+    }
+
+    # Endpoint para autorizar la orden
+    endpoint = f"{vtex_api.base_url}/api/checkout/pvt/orders/MKT-{order_id}-01/receipts/marketplace-order-authorization"
+
+    # Enviar la solicitud
+    response = requests.post(endpoint, headers=vtex_api.headers, json=authorization_payload)
+    if response.status_code not in [200, 201]:
+        raise Exception(f"Error al autorizar la orden: {response.status_code} - {response.text}")
+
+def invoice_order_in_vtex(order_id, order):
+    # Construir el payload para facturar la orden
+    invoice_payload = {
+        "type": "Output",
+        "invoiceNumber": generate_random_string(8),
+        "invoiceValue": int(order.total_price * 100),  # En centavos
+        "issuanceDate": get_current_iso8601_datetime(),
+        "invoiceUrl": "http://www.invoiceurl.com",  # Ajusta según sea necesario
+        "invoiceKey": generate_random_string(12),
+        "trackingNumber": generate_random_string(10),
+        "trackingUrl": "http://www.trackingurl.com",  # Ajusta según sea necesario
+        "courier": "All postal codes",
+        "items": []
+    }
+
+    # Agregar los ítems de la orden
+    for item in order.items:
+        invoice_payload["items"].append({
+            "id": item["sku_id"],
+            "price": int(float(item["price"]) * 100),  # En centavos
+            "quantity": int(item["quantity"])
+        })
+
+    # Endpoint para facturar la orden
+    endpoint = f"{vtex_api.base_url}/api/oms/pvt/orders/MKT-{order_id}-01/invoice"
+
+    # Enviar la solicitud
+    response = requests.post(endpoint, headers=vtex_api.headers, json=invoice_payload)
+    if response.status_code not in [200, 201]:
+        raise Exception(f"Error al facturar la orden: {response.status_code} - {response.text}")
+
+def generate_random_string(length):
+    letters_and_digits = string.ascii_letters + string.digits
+    return ''.join(random.choice(letters_and_digits) for i in range(length))
+
+def get_current_iso8601_datetime():
+    # Obtener la hora actual en UTC y formatearla en ISO 8601 con microsegundos y zona horaria
+    now = datetime.now(timezone.utc)
+    return now.isoformat()
