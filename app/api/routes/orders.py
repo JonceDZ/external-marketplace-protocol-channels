@@ -13,13 +13,13 @@ class SLARequest(BaseModel):
 @router.post("/update_sla")
 def update_sla_endpoint(request: SLARequest):
     try:
-        update_sla_info(
+        sku_responses = update_sla_info(
             sku_ids=request.sku_ids,
             postal_code=request.postal_code,
             country=request.country,
             client_profile_data=request.client_profile_data
         )
-        return {"message": f"SLA actualizado para SKU {request.sku_ids}"}
+        return {"messages": sku_responses}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
