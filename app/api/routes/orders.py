@@ -26,7 +26,7 @@ def get_current_user_id():
     # Implement logic to retrieve current user ID
     return 1  # Placeholder
 
-@router.post("/update_sla")
+@router.post("/add_to_cart")
 def update_sla_endpoint(request: SLARequest, user_id: int = Depends(get_current_user_id)):
     try:
         sku_responses = update_sla_info(
@@ -55,16 +55,3 @@ def create_order_endpoint(request: OrderRequest, user_id: int = Depends(get_curr
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/create_order")
-def create_order_endpoint(request: OrderRequest):
-    try:
-        order_response = create_order(
-            items=request.items,
-            client_profile_data=request.client_profile_data,
-            postal_code=request.postal_code,
-            country=request.country,
-            address_data=request.address_data
-        )
-        return {"message": "Orden creada exitosamente", "order": order_response}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
