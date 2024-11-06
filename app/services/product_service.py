@@ -212,8 +212,11 @@ def remove_product_from_affiliate(sku_id):
         raise Exception(f"El SKU {sku_id} no existe en la base de datos.")
     db.close()
 
+# app/services/product_service.py
+
 def update_sla_info(sku_ids, postal_code, country, client_profile_data):
     db: Session = SessionLocal()
+    sku_responses = []
     try:
         # Preparar los items para la simulación
         items = [{"id": str(sku_id), "quantity": 1, "seller": "1"} for sku_id in sku_ids]  # Ajusta el seller ID si es necesario
@@ -237,8 +240,15 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data):
             sku_id = sku_ids[index]
             slas = logistics_info.get('slas', [])
 
+            # Verificar disponibilidad de inventario
+            availability = fulfillment_data['items'][index].get('availability')
+            sku_message = f"SLA actualizado para SKU {sku_id}"
+
+            if availability != 'available':
+                sku_message += " - Este SKU no tiene inventario disponible."
+
             if not slas:
-                # Registrar error en logs y continuar con el siguiente SKU
+                # Registrar error en logs y agregar mensaje al response
                 log_event(
                     operation_id=sku_id,
                     operation="SLAUpdate",
@@ -249,6 +259,10 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data):
                     business_message=f"No hay SLAs disponibles para SKU {sku_id} en la dirección proporcionada.",
                     status="Error"
                 )
+                sku_responses.append({
+                    "sku_id": sku_id,
+                    "message": f"No hay SLAs disponibles para SKU {sku_id} en la dirección proporcionada."
+                })
                 continue
 
             # Tomamos el primer SLA disponible (puedes ajustar esto según tus necesidades)
@@ -259,7 +273,6 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data):
             sla_delivery_channel = sla.get('deliveryChannel')
             sla_list_price = sla.get('listPrice', 0) / 100  # Dividir por 100 si está en centavos
             sla_seller = fulfillment_data["items"][index].get("seller")
-            #sla_seller = sla.get('deliveryIds', [{}])[0].get('courierId', '')
 
             # Actualizar en la base de datos
             product = db.query(Product).filter(Product.sku_id == sku_id).first()
@@ -270,7 +283,7 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data):
                 product.sla_seller = sla_seller
                 db.commit()
             else:
-                # Registrar error en logs y continuar
+                # Registrar error en logs y agregar mensaje al response
                 log_event(
                     operation_id=sku_id,
                     operation="SLAUpdate",
@@ -281,6 +294,10 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data):
                     business_message=f"El SKU {sku_id} no existe en la base de datos.",
                     status="Error"
                 )
+                sku_responses.append({
+                    "sku_id": sku_id,
+                    "message": f"El SKU {sku_id} no existe en la base de datos."
+                })
                 continue
 
             # Registrar éxito en logs
@@ -295,10 +312,20 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data):
                 status="Success"
             )
 
+            # Agregar mensaje al response
+            sku_responses.append({
+                "sku_id": sku_id,
+                "message": sku_message
+            })
+
     except Exception as e:
         raise Exception(f"Error al actualizar información de SLA: {str(e)}")
     finally:
         db.close()
+
+    # Devolver la lista de mensajes para cada SKU
+    return sku_responses
+
 
 def create_order(items, client_profile_data, postal_code, country, address_data):
     db: Session = SessionLocal()
