@@ -32,10 +32,7 @@ class Product(Base):
     is_active = Column(Boolean, default=True)
     price = Column(Float, nullable=True)
     inventory = Column(Integer, nullable=True)
-    sla_id = Column(String, nullable=True)
-    sla_delivery_channel = Column(String, nullable=True)
-    sla_list_price = Column(Float, nullable=True)
-    sla_seller = Column(String, nullable=True)
+
 
 class Order(Base):
     __tablename__ = "orders"
@@ -58,3 +55,17 @@ class OrderItem(Base):
     price = Column(Float, nullable=False)
     # Relación inversa con Order
     order = relationship("Order", back_populates="items")
+
+class CartItem(Base):
+    __tablename__ = "cart_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sku_id = Column(Integer, index=True, nullable=False)
+    quantity = Column(Integer, nullable=False)
+    sla_id = Column(String, nullable=True)
+    sla_delivery_channel = Column(String, nullable=True)
+    sla_list_price = Column(Float, nullable=True)
+    sla_seller = Column(String, nullable=True)
+    price = Column(Float, nullable=True)
+    inventory = Column(Integer, nullable=True)
+    user_id = Column(Integer, nullable=True)
