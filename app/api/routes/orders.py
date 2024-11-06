@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from app.services.product_service import update_sla_info, create_order
+from app.services.product_service import update_sla_info, create_order, authorize_and_invoice_order
 
 router = APIRouter()
 
@@ -55,3 +55,10 @@ def create_order_endpoint(request: OrderRequest, user_id: int = Depends(get_curr
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/authorize_and_invoice/{order_id}")
+def authorize_and_invoice_endpoint(order_id: str):
+    try:
+        authorize_and_invoice_order(order_id)
+        return {"message": f"La orden MKT-{order_id}-01 fue autorizada y facturada exitosamente."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
