@@ -1,6 +1,6 @@
 from app.services.vtex_api import VTEXAPI
 from app.db.database import SessionLocal
-from app.models.database_models import Product, Order, OrderItem, CartItem
+from app.models.database_models import Product, Order, CartItem
 from app.utils.logging import log_event
 from sqlalchemy.orm import Session
 import requests
@@ -333,53 +333,63 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data, user_id)
 def create_order(items, client_profile_data, postal_code, country, address_data, user_id):
     db: Session = SessionLocal()
 
-    # Initialize variables
+    # Inicializar variables
     order_items = []
     logistics_info = []
     total_price = 0
-    sla_seller = None  # Assuming all items have the same seller
+    sla_seller = None  # Asumiendo que todos los ítems tienen el mismo vendedor
 
-    # Iterate over each item to build order_items and logistics_info
+    # Lista para almacenar los detalles de los ítems para la base de datos
+    items_for_db = []
+
+    # Iterar sobre cada ítem para construir order_items y logistics_info
     for index, item in enumerate(items):
         sku_id = item.sku_id
         quantity = item.quantity
 
-        # Get SLA and price information from CartItem
+        # Obtener información del CartItem
         cart_item = db.query(CartItem).filter(CartItem.sku_id == sku_id, CartItem.user_id == user_id).first()
         if not cart_item:
             db.close()
             raise Exception(f"El SKU {sku_id} no existe en el carrito.")
 
-        # Build the order item
+        # Construir el ítem de la orden para VTEX
         order_items.append({
             "id": str(sku_id),
             "quantity": quantity,
             "seller": cart_item.sla_seller,
-            "price": int(cart_item.price * 100)  # Price in cents
+            "price": int(cart_item.price * 100)  # Precio en centavos
         })
 
-        # Build logistics info
+        # Construir la información logística
         logistics_info.append({
             "itemIndex": index,
             "selectedSla": cart_item.sla_id,
             "selectedDeliveryChannel": cart_item.sla_delivery_channel,
-            "price": int(cart_item.sla_list_price * 100)  # Price in cents
+            "price": int(cart_item.sla_list_price * 100)  # Precio en centavos
         })
 
-        # Add to total price
+        # Agregar al precio total
         total_price += (cart_item.price + cart_item.sla_list_price) * quantity
 
-        # Set sla_seller if not set
+        # Agregar detalles del ítem para la base de datos
+        items_for_db.append({
+            "sku_id": str(sku_id),
+            "quantity": str(quantity),
+            "price": str(cart_item.price)
+        })
+
+        # Establecer sla_seller si no está establecido
         if sla_seller is None:
             sla_seller = cart_item.sla_seller
         elif sla_seller != cart_item.sla_seller:
-            # Handle multiple sellers if necessary
+            # Manejar múltiples vendedores si es necesario
             pass
 
-    # Generate a unique marketplaceOrderGroup
+    # Generar un marketplaceOrderGroup único
     marketplace_order_group = f"Transparent{uuid.uuid4().hex[:8]}"
 
-    # Build the order payload
+    # Construir el payload de la orden
     order_payload = {
         "items": order_items,
         "clientProfileData": client_profile_data,
@@ -389,46 +399,35 @@ def create_order(items, client_profile_data, postal_code, country, address_data,
             "logisticsInfo": logistics_info
         },
         "marketplaceOrderGroup": marketplace_order_group,
-        "marketplaceServicesEndpoint": "https://yourmarketplace.com/mktp",  # Adjust as needed
-        "marketplacePaymentValue": int(total_price * 100)  # Total price in cents
+        "marketplaceServicesEndpoint": "https://yourmarketplace.com/mktp",  # Ajusta según tu configuración
+        "marketplacePaymentValue": int(total_price * 100)  # Precio total en centavos
     }
 
-    # Make the request to create the order
+    # Realizar la solicitud para crear la orden
     endpoint = f"{vtex_api.base_url}/api/checkout/pvt/orders"
     params = {
         "sc": vtex_api.sales_channel_id,
-        "affiliateId": "EXT_MKTP"  # Replace with your affiliate ID if necessary
+        "affiliateId": "EXT_MKTP"  # Reemplaza con tu ID de afiliado si es necesario
     }
     response = requests.put(endpoint, headers=vtex_api.headers, json=order_payload, params=params)
 
     if response.status_code in [200, 201]:
-        # Store the order in the database
+        # Almacenar la orden en la base de datos
         new_order = Order(
             order_id=marketplace_order_group,
             total_price=total_price,
-            status="Created"
+            status="Created",
+            items=items_for_db  # Almacenar los ítems como JSON
         )
         db.add(new_order)
         db.commit()
 
-        # Store the order items
-        for item in items:
-            order_item = OrderItem(
-                order_id=new_order.id,
-                sku_id=item.sku_id,
-                quantity=item.quantity,
-                price=cart_item.price  # Use price from cart_item
-            )
-            db.add(order_item)
-        db.commit()
-
-        # Clear the CartItem entries for the SKUs in this order
-        for item in items:
-            db.query(CartItem).filter(CartItem.sku_id == item.sku_id, CartItem.user_id == user_id).delete()
+        # Limpiar los CartItems del usuario
+        db.query(CartItem).filter(CartItem.user_id == user_id).delete()
         db.commit()
         db.close()
 
-        # Log success
+        # Registrar éxito en logs
         log_event(
             operation_id=marketplace_order_group,
             operation="OrderCreation",
@@ -442,7 +441,7 @@ def create_order(items, client_profile_data, postal_code, country, address_data,
         return response.json()
     else:
         db.close()
-        # Log error
+        # Registrar error en logs
         log_event(
             operation_id=marketplace_order_group,
             operation="OrderCreation",
