@@ -4,8 +4,12 @@ from app.services.product_service import update_sla_info, create_order, authoriz
 
 router = APIRouter()
 
+class SLAItem(BaseModel):
+    sku_id: int
+    quantity: int
+
 class SLARequest(BaseModel):
-    sku_ids: list[int]
+    items: list[SLAItem]
     postal_code: str
     country: str
     client_profile_data: dict
@@ -30,7 +34,7 @@ def get_current_user_id():
 def update_sla_endpoint(request: SLARequest, user_id: int = Depends(get_current_user_id)):
     try:
         sku_responses = update_sla_info(
-            sku_ids=request.sku_ids,
+            items=request.items,
             postal_code=request.postal_code,
             country=request.country,
             client_profile_data=request.client_profile_data,
@@ -39,7 +43,7 @@ def update_sla_endpoint(request: SLARequest, user_id: int = Depends(get_current_
         return {"messages": sku_responses}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 @router.post("/create_order")
 def create_order_endpoint(request: OrderRequest, user_id: int = Depends(get_current_user_id)):
     try:

@@ -217,16 +217,16 @@ def remove_product_from_affiliate(sku_id):
 
 # app/services/product_service.py
 
-def update_sla_info(sku_ids, postal_code, country, client_profile_data, user_id):
+def update_sla_info(items, postal_code, country, client_profile_data, user_id):
     db: Session = SessionLocal()
     sku_responses = []
     try:
         # Prepare items for simulation
-        items = [{"id": str(sku_id), "quantity": 1, "seller": "1"} for sku_id in sku_ids]
+        simulation_items = [{"id": str(item.sku_id), "quantity": item.quantity, "seller": "1"} for item in items]
 
         # Simulate fulfillment with delivery data
         fulfillment_data = vtex_api.simulate_fulfillment_with_delivery(
-            items=items,
+            items=simulation_items,
             postal_code=postal_code,
             country=country,
             client_profile_data=client_profile_data
@@ -240,7 +240,9 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data, user_id)
 
         # Iterate over each SKU and store SLA info in CartItem table
         for index, logistics_info in enumerate(logistics_info_list):
-            sku_id = sku_ids[index]
+            item = items[index]
+            sku_id = item.sku_id
+            quantity = item.quantity
             slas = logistics_info.get('slas', [])
 
             # Check inventory availability
@@ -283,7 +285,7 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data, user_id)
             cart_item = db.query(CartItem).filter(CartItem.sku_id == sku_id, CartItem.user_id == user_id).first()
             if cart_item:
                 # Update existing CartItem
-                cart_item.quantity += 1  # Or set quantity based on user input
+                cart_item.quantity += quantity
                 cart_item.sla_id = sla_id
                 cart_item.sla_delivery_channel = sla_delivery_channel
                 cart_item.sla_list_price = sla_list_price
@@ -294,7 +296,7 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data, user_id)
                 # Create new CartItem
                 cart_item = CartItem(
                     sku_id=sku_id,
-                    quantity=1,  # Or set quantity based on user input
+                    quantity=quantity,
                     user_id=user_id,
                     sla_id=sla_id,
                     sla_delivery_channel=sla_delivery_channel,
@@ -331,6 +333,7 @@ def update_sla_info(sku_ids, postal_code, country, client_profile_data, user_id)
 
     # Return list of messages for each SKU
     return sku_responses
+
 
 
 def create_order(items, client_profile_data, postal_code, country, address_data, user_id):
