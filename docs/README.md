@@ -1,212 +1,169 @@
 # External Marketplace Protocol Transparente
-El fin de este desarrollo es ofrecer una aplicación que permita a los VTEXers entender la manera en cómo opera una integración basada en el External Marketplace Protocol. 
-Se denomina transparente, ya que busca ofrecer la perspectiva de ambos lados, tanto desde el seller VTEX, como del Marketplace externo.
 
-## Tecnologías Utilizadas
-- **Backend:** Python 3.9.6, FastAPI, Uvicorn
-- **Base de Datos:** SQLite (posibilidad de migrar a PostgreSQL)
-- **Interfaz de Usuario:** Jinja2, HTML/CSS
-- **Cliente HTTP:** requests
-- **ORM:** SQLAlchemy
-- **Gestión de Dependencias:** pip
-- **Entorno Virtual:** conda
+El objetivo de este proyecto es ofrecer una aplicación que permita a los VTEXers entender cómo opera una integración basada en el External Marketplace Protocol de VTEX. Se denomina transparente porque busca ofrecer la perspectiva de ambos lados: tanto desde el seller VTEX como del marketplace externo.
+
+## Tecnologías utilizadas
+* **Backend:** Python 3.9.6, FastAPI, Uvicorn
+* **Base de Datos:** SQLite (con posibilidad de migrar a PostgreSQL)
+* **ORM:** SQLAlchemy
+* **Validación de Datos:** Pydantic
+* **Cliente HTTP:** requests
+* **Interfaz de Usuario (UI):** Jinja2 (posibilidad de utilizar Vue.js en el futuro)
+* **Gestión de Dependencias:** pip y requirements.txt
+* **Entorno Virtual:** conda
 
 ## Configuración Inicial
-
 ### Prerrequisitos
-- Tener `conda` instalado en tu sistema.
-- Tener acceso a un repositorio de VTEX y sus credenciales.
+* Tener conda instalado en tu sistema.
+* Tener acceso a una cuenta VTEX y sus credenciales (App Key y App Token).
 
 ### Instalación
-1. Clona el repositorio.
-2. Navega al directorio del proyecto: `cd external-marketplace-protocol-channels`
-3. Crea y activa el entorno virtual usando conda: 
+1. Clonar el repositorio:
+```
+git clone https://github.com/JonceDZ/external-marketplace-protocol-channels.git
+```
+2. Navegar al directorio del proyecto:
+```
+cd external-marketplace-protocol-channels
+```
+3. Crear y activar el entorno virtual usando conda:
 ```
 conda create --name vtex-marketplace python=3.9.6
 conda activate vtex-marketplace
 ```
-4. Instala las dependencias: `pip install -r requirements.txt`
-
+4. Instalar las dependencias:
+```
+pip install -r requirements.txt
+```
 ### Configuración de Variables de Entorno
-Crea un archivo .env en la raíz del proyecto con las siguientes variables:
+Crea un archivo `.env` en la raíz del proyecto con las siguientes variables:
 ```
-VTEX_APP_KEY=your_app_key
-VTEX_APP_TOKEN=your_app_token
-VTEX_ACCOUNT_NAME={accountName}
+VTEX_APP_KEY= {X-VTEX-API-AppKey}
+VTEX_APP_TOKEN= {X-VTEX-API-AppToken}
+VTEX_ACCOUNT_NAME= {accountName}
 VTEX_API_URL=https://{accountName}.vtexcommercestable.com.br/api
+SALES_CHANNEL_ID= {tradePolicy}
 ```
+_Reemplaza `tu_app_key`, `tu_app_token`, `tu_account_name` y `tu_sales_channel_id` con los valores correspondientes de tu cuenta VTEX._
 
-## Cómo Ejecutar el Proyecto
-1. Inicia el servidor FastAPI: `uvicorn app.main:app --reload`
+## Ejecución del proyecto
 
-2. Accede a la aplicación en tu navegador: http://127.0.0.1:8000
-Para ver la documentación interactiva generada por FastAPI, visita: http://127.0.0.1:8000/docs
+Para que el proyecto pueda correr sin problemas, es necesario tener en cuenta las siguientes **anotaciones y limitaciones** del mismo:
+* Se debe tener una configuración logística específica para este canal, la cual debe tener la capacidad de despachar a nivel nacional. A partir de esta configuración se evitan escenarios en los que se muestre algún producto como disponible en el front del marketplace externo, pero que luego no esté disponible para despachar a zonas específicas.
+* Debido a la configuración y lógica que tiene el marketplace, solo funciona con cuentas que no tengan ningún tipo de impuesto (tax) configurado. Esto porque se toma el `sellingPrice` y valor logístico como criterios para el cálculo del valor final; de momento no se tienen en cuenta impuestos. _Cabe resaltar que no se descarta implementar esta funcionalidad en versiones futuras_
+
+Teniendo en cuenta esto, se puede proceder con la ejecución:
+1. Inicia el servidor FastAPI:
+```
+uvicorn app.main:app --reload
+```
+2. Accede a la aplicación en tu navegador:
+* **Aplicación:** http://127.0.0.1:8000
+* **Documentación interactiva (Swagger UI):** http://127.0.0.1:8000/docs
 
 ## Estructura del Proyecto
-La estructura del proyecto se ha detallado en ARCHITECTURE.md. Consulta ese archivo para entender cómo está organizada la aplicación y cómo se integran los diferentes componentes.
+La estructura general del proyecto es la siguiente:
+```
+external-marketplace-protocol-channels/
+├── app/
+│   ├── main.py                   # Punto de entrada de la aplicación
+│   ├── api/
+│   │   └── routes/
+│   │       ├── notifications.py   # Endpoints para notificaciones desde VTEX
+│   │       ├── logs.py            # Endpoints para obtener logs
+│   │       ├── products.py        # Endpoints para manejo de productos
+│   │       └── orders.py          # Endpoints para manejo de órdenes
+│   ├── config/
+│   │   └── settings.py            # Configuración y variables de entorno
+│   ├── db/
+│   │   └── database.py            # Configuración de la base de datos
+│   ├── models/
+│   │   └── database_models.py     # Modelos de datos
+│   ├── services/
+│   │   ├── product_service.py     # Lógica de negocio para productos y órdenes
+│   │   └── vtex_api.py            # Cliente para interacción con la API de VTEX
+│   ├── templates/                 # Plantillas HTML (vacío por ahora)
+│   └── utils/
+│       └── logging.py             # Utilidades para logging
+├── docs/
+│   ├── ARCHITECTURE.md            # Documentación de arquitectura
+│   └── README.md                  # Este archivo
+├── .env                           # Variables de entorno (no se sube al repositorio)
+├── .gitignore                     # Archivos ignorados por Git
+├── requirements.txt               # Dependencias del proyecto
+└── vtex_marketplace.db            # Base de datos SQLite generada
+```
 
-## Servicio de Logging
-El servicio de logging está diseñado para cumplir con las especificaciones de VTEX, permitiendo que el marketplace externo registre y exponga los logs de interacción con VTEX.
+## Flujo de datos
 
-* Modelo de Datos:`LogEntry` incluye los campos requeridos por VTEX.
-* Endpoint de Logs: Expuesto en `/{vtexaccount}/logs/`, acepta los parámetros `DateAt` y `status`.
-* Formato de Mensajes: Los logs siguen el estándar definido por VTEX, incluyendo códigos de evento y mensajes amigables.
-* Uso en la Aplicación: Los logs se registran utilizando la función `log_event` en los puntos clave de interacción con VTEX.
+1. **Carga Inicial y Actualización del Catálogo:**
+* **Carga Inicial:** Obtiene todos los SKUs asociados al canal de ventas configurado en VTEX y los almacena en la base de datos local.
+* **Notificaciones:** Recibe notificaciones desde VTEX cuando hay actualizaciones en productos o SKUs y actualiza la base de datos en consecuencia.
 
-## Carga Inicial de Productos desde VTEX
-La aplicación cuenta con un servicio que realiza la carga inicial de productos desde VTEX, obteniendo información detallada de los SKUs asociados al canal de ventas configurado y almacenándola en la base de datos del marketplace.
+2. **Gestión de Órdenes:**
+* **Agregar Ítems al Carrito:** Simula fulfillment para obtener información de SLA y almacena los datos en una tabla temporal, simulando el comportamiento de un carrito (`CartItem`).
+* **Crear Órdenes:** Valida que los ítems y cantidades en el carrito coincidan con la solicitud y crea la orden en VTEX, almacenando los detalles en la base de datos.
+* **Autorizar y Facturar Órdenes:** Envía notificaciones a VTEX para autorizar y facturar las órdenes, permitiendo que avancen en el flujo de procesamiento, llegando hasta status `Facturado` en VTEX.
+3. **Logging:**
+* Registra eventos clave y errores en una tabla de logs, siguiendo las especificaciones de VTEX.
 
-### Proceso de Carga Inicial
-* **Obtención de SKUs:** La aplicación interactúa con el endpoint de VTEX para obtener la lista de SKU IDs asociados al canal de ventas especificado.
-* **Validación de Productos y SKUs:** Para cada SKU obtenido, se realizan las siguientes validaciones:
-    * El SKU está activo (`isActive`).
-    * El SKU está asociado al canal de ventas configurado.
-    * El producto asociado al SKU está activo.
-* **Simulación de Fulfillment:** La aplicación realiza una simulación de fulfillment utilizando el endpoint de VTEX para obtener el precio e inventario del SKU.
-* **Almacenamiento en la Base de Datos:** La información de cada SKU se almacena o actualiza en la base de datos, garantizando que los registros reflejen los datos más recientes.
-* **Registro de Logs:** Cada paso del proceso es registrado en el sistema de logs siguiendo los códigos de evento y mensajes estándar definidos por VTEX.
+## Endpoints y Servicios
+### Catálogo
+#### Carga Inicial de Productos
+Endpoint:
+```
+POST /products/initial_load/
+```
+* **Descripción:**
+Realiza la carga inicial de productos desde VTEX, obteniendo todos los SKUs asociados a la política comercial configurada y almacenándolos en la base de datos local.
 
-### Modelo de Datos para Productos
-El modelo Product incluye los siguientes campos principales:
+* **Proceso:**
 
-* `sku_id`: Identificador único del SKU en VTEX.
-* `product_id`: Identificador único del producto en VTEX.
-* `name`: Nombre del producto.
-* `product_description`: Descripción del producto.
-* `brand_name`: Nombre de la marca del producto.
-* `category_id`: ID de la categoría del producto.
-* `category_name`: Nombre de la categoría del producto.
-* `image_url`: URL de la imagen del producto.
-* `is_active`: Estado del SKU (1 = sí está activo; 0 = no está activo).
-* `price`: Precio obtenido de la simulación.
-* `inventory`: Nivel de inventario obtenido de la simulación.
+    1. **Obtención de SKUs:** Utiliza `vtex_api.get_sku_ids_by_sales_channel` para obtener los SKU IDs.
+    2. **Procesamiento de SKUs:** Para cada SKU, se obtienen los detalles y se almacenan en la base de datos mediante process_sku.
+    3. **Validaciones:** Se asegura que el SKU y el producto estén activos y asociados al canal de ventas.
+    4. **Simulación de Fulfillment:** Obtiene precio e inventario mediante `simulate_fulfillment`.
+    5. **Registro de Logs:** Cada operación se registra en el sistema de logs.
 
-### Endpoint para Carga Inicial de Productos
-La aplicación expone un endpoint para iniciar el proceso de carga inicial:
+#### Recepción de Notificaciones
+Endpoint:
+```
+POST /notifications/
+```
+* **Descripción:**
+Recibe notificaciones de VTEX cuando hay actualizaciones en productos o SKUs y procesa los cambios en la base de datos.
 
-Ruta: `/products/initial_load/`
-Método: `POST`
-Parámetro: `sales_channel_id` (ID del canal de ventas para el que se desea realizar la carga).
+* **Proceso:**
 
-### Validación y Manejo de Errores
-Si el SKU o el producto no cumplen con las validaciones, se registra un error y se continúa con el siguiente SKU.
+    1. **Validación de Payload:** Verifica que la notificación contenga todos los campos necesarios.
+    2. **Procesamiento de la Notificación:** Dependiendo de los campos, puede crear, actualizar o eliminar productos mediante `process_notification`.
+    3. **Registro de Logs:** Registra el éxito o error de la operación en los logs.
 
-## Notificaciones de Nuevos Productos o Actualizaciones desde VTEX
-Además de la carga inicial de productos, la aplicación está preparada para recibir notificaciones desde VTEX cuando se crea o actualiza un producto o SKU.
+* **Campos Clave en la Notificación:**
+    * `idSKU`, `productId`, `an`, `idAffiliate`, `DateModified`, `isActive`, `StockModified`, `PriceModified`, `HasStockKeepingUnitModified`, `HasStockKeepingUnitRemovedFromAffiliate`.
 
-### Proceso de Recepción de Notificaciones
-* Cuando un nuevo producto o SKU se registra en VTEX, se envía una notificación al endpoint configurado.
-* La aplicación procesa esta notificación para actualizar o registrar la información del producto en el marketplace.
-* Se realizan las mismas validaciones que en la carga inicial, incluyendo la validación del estado del SKU, precio e inventario.
+### Órdenes
+#### Agregar Ítems al Carrito
+Endpoint:
+```
+POST /orders/add_to_cart
+```
+* **Descripción:**
+Agrega ítems al carrito, simulando fulfillment para obtener información de SLA y almacenando los datos en la base de datos.
 
-### Campos Recibidos en la Notificación
-La notificación contiene los siguientes campos clave:
-
-* `idSKU`: ID del SKU en VTEX.
-* `productId`: ID del producto en VTEX.
-* `an`: Nombre de la cuenta del seller en VTEX.
-* `idAffiliate`: ID del afiliado generado automáticamente en la configuración.
-* `DateModified`: Fecha de la última modificación del producto.
-* `isActive`: Estado del producto (activo o inactivo).
-* `StockModified`: Indica si el inventario ha sido modificado.
-* `PriceModified`: Indica si el precio ha sido modificado.
-* `HasStockKeepingUnitModified`: Indica si los datos del SKU han sido modificados.
-* `HasStockKeepingUnitRemovedFromAffiliate`: Indica si el producto ya no está asociado con la política comercial.
-
-### Registro de Logs
-Cada notificación procesada genera un registro en el sistema de logs, donde se registra si la operación fue exitosa o si hubo algún error.
-
-### Endpoint para Recibir Notificaciones: 
-* Ruta: `/notifications/`
-* Método: `POST`
-* Descripción: Recibe notificaciones de VTEX sobre nuevos productos o actualizaciones de SKUs.
-
-## Servicios de Ajuste de Precios e Inventario del Marketplace
-Para simular comportamientos típicos de un marketplace, la aplicación incluye servicios que permiten ajustar los precios de los productos y gestionar inventario propio del marketplace.
-
-### Funcionalidades Disponibles
-* **Aplicar Interés a Precios**: Ajusta los precios de los productos aplicando un porcentaje de interés definido por el usuario.
-* **Aplicar Descuento a Precios**: Aplica un porcentaje de descuento a los precios de los productos.
-* **Aplicar Impuesto a Precios**: Ajusta los precios de los productos aplicando un porcentaje de impuesto definido.
-* **Gestionar Inventario del Marketplace**: Permite establecer un inventario propio del marketplace para los SKUs.
-
-#### Endpoints Disponibles
-
-##### 1. Aplicar Interés a Precios
-* **Ruta**: `/adjustments/apply_interest`
-* **Método**: `POST`
-* **Descripción**: 
-    * Aplica un porcentaje de interés a los precios de los SKUs especificados o a todos los SKUs si no se especifican.
-    * La tasa debe ser un valor decimal entre 0 y 1.
-    * Si `sku_ids` se omite, el interés se aplicará a todos los productos.
-
-**Body de la Solicitud**:
+Parámetros de Solicitud:
 ```
 {
-  "rate": 0.05,          // Tasa de interés (ejemplo: 0.05 para 5%)
-  "sku_ids": [100, 200]  // Opcional: Lista de SKU IDs a los que se aplicará el interés. Si se omite, se aplica a todos los SKUs.
-}
-```
-
-##### 2. Aplicar Descuento a Precios
-* **Ruta**: `/adjustments/apply_discount`
-* **Método**: `POST`
-* **Descripción**:  
-    * Aplica un porcentaje de descuento a los precios de los SKUs especificados o a todos los SKUs si no se especifican.
-    * La tasa debe ser un valor decimal entre 0 y 1.
-    * Si `sku_ids` se omite, el interés se aplicará a todos los productos.
-
-**Body de la Solicitud**:
-```
-{
-  "rate": 0.10,          // Tasa de descuento (ejemplo: 0.10 para 10%)
-  "sku_ids": [100, 200]  // Opcional: Lista de SKU IDs a los que se aplicará el descuento. Si se omite, se aplica a todos los SKUs.
-}
-
-```
-
-##### 3. Aplicar Impuesto a Precios
-* **Ruta**: `/adjustments/apply_tax`
-* **Método**: `POST`
-* **Descripción**:   
-    * Aplica un porcentaje de impuesto a los precios de los SKUs especificados o a todos los SKUs si no se especifican.
-    * La tasa debe ser un valor decimal entre 0 y 1.
-    * Si `sku_ids` se omite, el interés se aplicará a todos los productos.
-
-**Body de la Solicitud**:
-```
-{
-  "rate": 0.08,          // Tasa de impuesto (ejemplo: 0.08 para 8%)
-  "sku_ids": [100, 200]  // Opcional: Lista de SKU IDs a los que se aplicará el impuesto. Si se omite, se aplica a todos los SKUs.
-}
-```
-
-##### 4. Establecer Inventario del Marketplace
-* **Ruta**: `/adjustments/set_marketplace_inventory`
-* **Método**: `POST`
-* **Descripción**:  
-    * Establece el inventario propio del marketplace para un SKU específico.
-    * Solo se puede actualizar un SKU por solicitud.
-    * El inventario debe ser un número entero positivo.
-
-**Body de la Solicitud**:
-```
-{
-  "sku_id": 100,         // ID del SKU al que se le establecerá el inventario.
-  "inventory": 50       // Cantidad de inventario a establecer.
-}
-```
-
-## Órdenes:
-A continuación, se especificarán tofdos los puntos relacionados con el sistema de órdenes que opera en el marketplace.
-### Endpoint para obtener información de SLAs disponibles
-* **Ruta:** //orders/update_sla
-* **Método:** `POST`
-* **Descripción:** Actualiza los datos de SLA para múltiples SKUs en una sola solicitud. Recibe una lista de `sku_ids` y parámetros logísticos para actualizar la base de datos.
-* **Parámetros de Solicitud:**
-```
-{
-    "sku_ids": [1, 2, 3],
+    "items": [
+        {
+            "sku_id": 1,
+            "quantity": 2
+        },
+        {
+            "sku_id": 1,
+            "quantity": 1
+        }
+    ],
     "postal_code": "11001",
     "country": "COL",
     "client_profile_data": {
@@ -219,23 +176,31 @@ A continuación, se especificarán tofdos los puntos relacionados con el sistema
     }
 }
 ```
-* **Respuesta:** Para cada SKU, el sistema actualiza los campos `sla_id`, `sla_delivery_channel`, `sla_list_price` y `sla_seller` en la base de datos local. Si algún SKU no tiene un SLA disponible o no está registrado, el error se registra en los logs y el proceso continúa con los siguientes SKUs.
+* **Proceso:**
 
-### Endpoint para crear órden con múltiples SKUs
-* **Ruta:** /orders/create_order
-* **Método:** `POST`
-* **Descripción:**  Crea una orden en VTEX con múltiples SKUs, almacenando la orden y cada ítem en la base de datos. Acepta una lista de objetos, cada uno representando un SKU con su `sku_id` y `quantity`. La información logística que se usa en esta solicitud será la que se obtuvo co n la API update_sla.
-* **Parámetros de Solicitud:**
+    1. **Simulación de Fulfillment con Entrega:** Utiliza `simulate_fulfillment_with_delivery` para obtener SLAs.
+    2. **Almacenamiento en `CartItem`:** Guarda los datos de SLA en la tabla temporal `CartItem`.
+    3. **Validaciones:** Si no hay SLAs disponibles o el SKU no está en el carrito, se registra un error.
+
+#### Crear Órdenes
+Endpoint:
+```
+POST /orders/create_order
+```
+* **Descripción:**
+Crea una orden en VTEX con los SKUs y cantidades especificados, asegurando que coincidan con los datos en el carrito.
+
+Parámetros de Solicitud:
 ```
 {
     "items": [
         {
             "sku_id": 1,
-            "quantity": 1
+            "quantity": 2
         },
         {
             "sku_id": 2,
-            "quantity": 2
+            "quantity": 1
         }
     ],
     "postal_code": "11001",
@@ -263,20 +228,116 @@ A continuación, se especificarán tofdos los puntos relacionados con el sistema
     }
 }
 ```
-* **Respuesta:** Si la solicitud es exitosa (código HTTP 201), se devuelve el identificador de la orden y un mensaje de éxito. La orden y sus ítems quedan registrados en la base de datos. En caso de error, se devuelve el mensaje de error de la API de VTEX.
 
-### Modelo de Datos para Órdenes:
+* **Proceso:**
 
-* **Modelo Orders**
-  * **Campos Principales:**
-    * **order_id:** Identificador único de la orden en VTEX.
-    * **total_price:** Precio total de la orden.
-    * **items:** Relación con el modelo OrderItem, que contiene los ítems específicos de la orden.
+    1. **Validación de Carrito vs Solicitud:** Asegura que los SKUs y cantidades en la solicitud coincidan con los del carrito.
+    2. **Construcción de la Orden:** Prepara los datos para enviar a VTEX.
+    3. **Creación de la Orden en VTEX:** Utiliza el endpoint de VTEX para crear la orden.
+    4. **Almacenamiento en la Base de Datos:** Guarda la orden y los detalles en la tabla Order.
+    5. **Limpieza del Carrito:** Elimina los CartItem del usuario.
 
-* **Modelo OrderItem**
-  * **Descripción:** Registra cada SKU asociado a una orden.
-  * **Campos:**
-    * **order_id:** ID de la orden a la que pertenece el ítem.
-    * **sku_id:** Identificador del SKU.
-    * **quantity:** Cantidad de unidades de este SKU en la orden.
-    * **price:** Precio de cada unidad del SKU.
+#### Autorizar y Facturar Órdenes
+Endpoint:
+```
+POST /orders/authorize_and_invoice/{order_id}
+```
+
+* ***Descripción:***
+Autoriza y factura una orden en VTEX, permitiendo que avance en el flujo de procesamiento.
+
+* **Parámetros de Ruta:**
+    * `order_id`: Identificador de la orden creada previamente.
+
+* **Proceso:**
+    1. **Autorización de la Orden:** Envía una notificación a VTEX autorizando la orden.
+    2. **Facturación de la Orden:** Envía la información de facturación a VTEX.
+    3. **Actualización del Estado:** Cambia el estado de la orden a `Invoiced` en la base de datos.
+    4. **Registro de Logs:** Registra el éxito o error de la operación en los logs.
+
+Ejemplo de Solicitud:
+```
+curl -X POST "http://127.0.0.1:8000/orders/authorize_and_invoice/{order_id}" \
+-H "Content-Type: application/json"
+```
+*Reemplaza {order_id} con el ID de la orden que deseas autorizar y facturar. El ID de la orden corresponde al que se almacenó en la BBDD local (sin el ID del afiliado ni el "01"*
+
+### Logs
+Endpoint:
+```
+GET /{vtexaccount}/logs/
+```
+* **Descripción:**
+Obtiene los logs registrados, filtrando por fecha y estado.
+
+* **Parámetros de Consulta:**
+    * `DateAt:` Fecha en formato `aaaa-mm-dd`.
+    * `status`: Estado de los logs (`all`, `success`, `error`, `alert`, `pending`).
+* **Respuesta:**
+Devuelve una lista de mensajes con los detalles de los eventos registrados.
+
+## Modelos de Datos
+### Product
+* **Descripción:**
+Representa los productos obtenidos desde VTEX.
+
+* **Campos Principales:**
+    * `sku_id`: Identificador único del SKU en VTEX.
+    *`product_id`: Identificador único del producto en VTEX.
+    *`name`: Nombre del producto.
+    *`product_description`: Descripción del producto.
+    *`brand_name`: Nombre de la marca.
+    *`category_id`: ID de la categoría.
+    *`category_name`: Nombre de la categoría.
+    *`image_url`: URL de la imagen.
+    *`is_active`: Estado del SKU.
+    *`price`: Precio del producto.
+    *`inventory`: Disponibilidad del producto.
+
+### Order
+* **Descripción:**
+Representa una orden creada en VTEX.
+
+* **Campos Principales:**
+    * `order_id`: Identificador único de la orden en VTEX.
+    * `total_price`: Precio total de la orden.
+    * `order_date`: Fecha de creación.
+    * `status`: Estado de la orden.
+    * `items`: Lista de ítems en formato JSON, cada uno con sku_id, quantity y price.
+
+### CartItem
+* **Descripción:**
+Tabla temporal que almacena los ítems agregados al carrito por un usuario.
+
+* **Campos Principales:**
+    *`sku_id`: Identificador del SKU.
+    *`quantity`: Cantidad agregada.
+    *`sla_id`: ID del SLA seleccionado.
+    *`sla_delivery_channel`: Canal de entrega.
+    *`sla_list_price`: Precio del SLA.
+    *`sla_seller`: Vendedor.
+    *`price`: Precio del SKU.
+    *`inventory`: Disponibilidad.
+    *`user_id`: Identificador del usuario.
+
+### LogEntry
+* **Descripción:**
+Registra eventos y errores para seguimiento y auditoría.
+
+* **Campos Principales:**
+    *`OperationId`: ID único de la operación.
+    *`Operation`: Tipo de operación realizada.
+    *`Direction`: Origen y destino de la información.
+    *`ContentSource`: Payload enviado por el origen.
+    *`ContentTranslated`: Mensaje transformado por el conector.
+    *`ContentDestination`: Payload enviado al destino.
+    *`BusinessMessage`: Mensaje explicativo.
+    *`Status`: Estado del log (Success, Error, etc.).
+    *`Timestamp`: Fecha y hora del evento.
+
+## Buenas Prácticas de Seguridad
+* **Manejo de Credenciales:** Las credenciales y datos sensibles se manejan mediante variables de entorno y no se incluyen en el repositorio.
+* **Validación de Datos:** Se validan las entradas en los endpoints para evitar inyecciones y datos malformados.
+* **Control de Acceso:** Aunque el proyecto es educagitivo, se recomienda implementar autenticación y autorización para endpoints sensibles.
+* **Registro de Errores:** Los errores se registran detalladamente en los logs para facilitar la detección y solución de problemas.
+
