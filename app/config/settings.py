@@ -3,7 +3,6 @@ from typing import Optional
 
 
 class Settings(BaseSettings):
-    vtex_app_key: str
     vtex_app_key: Optional[str] = None
     vtex_app_token: Optional[str] = None
     vtex_account_name: Optional[str] = None
