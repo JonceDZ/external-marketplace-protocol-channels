@@ -47,10 +47,7 @@ async def initial_setup(
     )
     # Recargar la configuración
     settings.reload()
-    # Re-inicializar la instancia de VTEXAPI con las nuevas credenciales
-    from app.services.vtex_api import VTEXAPI
-    global vtex_api
-    vtex_api = VTEXAPI()
+
     # Iniciar la carga inicial del catálogo
     try:
         process_initial_load(sales_channel_id)
