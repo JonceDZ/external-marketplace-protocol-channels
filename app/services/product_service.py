@@ -8,10 +8,16 @@ import uuid
 import random
 import string
 from datetime import datetime, timezone, timedelta
+from app.config import settings
 
-vtex_api = VTEXAPI()
 
-def process_initial_load(sales_channel_id):
+def process_initial_load(sales_channel_id=None):
+    vtex_api = VTEXAPI()
+    if not sales_channel_id:
+        sales_channel_id = settings.sales_channel_id
+    if not all([vtex_api.app_key, vtex_api.app_token, vtex_api.account_name, vtex_api.base_url]):
+        raise Exception("Las credenciales de VTEX no están configuradas correctamente.")
+
     try:
         sku_ids = vtex_api.get_sku_ids_by_sales_channel(sales_channel_id)
         for sku_id in sku_ids:
@@ -29,11 +35,12 @@ def process_initial_load(sales_channel_id):
                     business_message=f"Error al procesar el SKU {sku_id}: {str(e)}",
                     status="Error"
                 )
-                continue
+                raise
     except Exception as e:
         raise Exception(f"Error en la carga inicial: {str(e)}")
 
 def process_sku(sku_id, sales_channel_id):
+    vtex_api = VTEXAPI()
     # Obtener detalles del SKU
     sku_data = vtex_api.get_sku_and_context(sku_id)
 
@@ -141,6 +148,7 @@ def get_last_category(sku_data):
     return last_category_id, category_name
 
 def process_notification(payload):
+    vtex_api = VTEXAPI()
     sku_id = payload.get('idSKU')
     sales_channel_id = vtex_api.sales_channel_id  # Usamos el canal de ventas configurado
 
@@ -166,6 +174,7 @@ def process_notification(payload):
         remove_product_from_affiliate(sku_id)
 
 def update_price_and_inventory(sku_id, sales_channel_id):
+    vtex_api = VTEXAPI()
     # Realizar simulación de fulfillment para obtener precio e inventario actualizados
     items = [{"id": str(sku_id), "quantity": 1, "seller": "1"}]  # Ajusta el seller ID si es necesario
     fulfillment_data = vtex_api.simulate_fulfillment(items, sales_channel_id)
@@ -218,6 +227,7 @@ def remove_product_from_affiliate(sku_id):
 # app/services/product_service.py
 
 def update_sla_info(items, postal_code, country, client_profile_data, user_id):
+    vtex_api = VTEXAPI()
     db: Session = SessionLocal()
     sku_responses = []
     try:
@@ -337,6 +347,7 @@ def update_sla_info(items, postal_code, country, client_profile_data, user_id):
 
 
 def create_order(items, client_profile_data, postal_code, country, address_data, user_id):
+    vtex_api = VTEXAPI()
     db: Session = SessionLocal()
 
     # Obtener todos los CartItems del usuario
@@ -533,6 +544,7 @@ def authorize_and_invoice_order(order_id):
         db.close()
 
 def authorize_order_in_vtex(order_id, order):
+    vtex_api = VTEXAPI()
     # Construir el payload para autorizar la orden
     authorization_payload = {
         "marketplaceOrderGroup": f"MKT-{order_id}-01",
@@ -551,6 +563,7 @@ def authorize_order_in_vtex(order_id, order):
         raise Exception(f"Error al autorizar la orden: {response.status_code} - {response.text}")
 
 def invoice_order_in_vtex(order_id, order):
+    vtex_api = VTEXAPI()
     # Construir el payload para facturar la orden
     invoice_payload = {
         "type": "Output",
