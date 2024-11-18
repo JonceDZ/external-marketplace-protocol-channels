@@ -18,21 +18,36 @@ class VTEXAPI:
         self.account_name = settings.vtex_account_name
         self.environment = "vtexcommercestable"
         self.sales_channel_id = settings.sales_channel_id
-        self.base_url = f"https://{self.account_name}.{self.environment}.com.br"
-        self.headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "X-VTEX-API-AppKey": self.app_key,
-            "X-VTEX-API-AppToken": self.app_token
-        }
+
+        # Verificar si las variables requeridas están presentes
+        if not all([self.app_key, self.app_token, self.account_name, self.sales_channel_id]):
+            # Si faltan variables, no inicializar los atributos dependientes
+            self.base_url = None
+            self.headers = None
+        else:
+            self.base_url = f"https://{self.account_name}.{self.environment}.com.br"
+            self.headers = {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-VTEX-API-AppKey": self.app_key,
+                "X-VTEX-API-AppToken": self.app_token
+            }
+
 
     def get_sku_ids_by_sales_channel(self, sales_channel_id):
-        endpoint = f"{self.base_url}/api/catalog_system/pvt/sku/stockkeepingunitidsbysaleschannel?sc={sales_channel_id}&page=1&pageSize=1000000" #Revisar las paginas y tamaño
+        if not self.base_url or not self.headers:
+            raise Exception("Las credenciales de VTEX no están configuradas correctamente.")
+        endpoint = f"{self.base_url}/api/catalog_system/pvt/sku/stockkeepingunitidsbysaleschannel?sc={sales_channel_id}&page=1&pageSize=1000000"
         response = requests.get(endpoint, headers=self.headers)
         if response.status_code == 200:
             return response.json()  # Retorna una lista de SKU IDs
         else:
-            raise Exception(f"Error al obtener SKUs: {response.status_code} - {response.text}")
+            if response.status_code == 401:
+                raise Exception("Credenciales inválidas. Verifique su App Key y App Token.")
+            elif response.status_code == 403:
+                raise Exception("Permisos insuficientes. Asegúrese de que sus credenciales tienen los permisos necesarios.")
+            else:
+                raise Exception(f"Error al obtener SKUs: {response.status_code} - {response.text}")
 
     def get_sku_and_context(self, sku_id):
         endpoint = f"{self.base_url}/api/catalog_system/pvt/sku/stockkeepingunitbyid/{sku_id}"
