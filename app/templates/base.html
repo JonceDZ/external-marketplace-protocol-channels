@@ -2,19 +2,31 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>{{ title }} - Marketplace</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Marketplace Externo</title>
     <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <h1>Marketplace Externo</h1>
-    </header>
-    <main>
-        {% block content %}
-        {% endblock %}
-    </main>
-    <footer>
-        <p>© Transparent External Marketplace</p>
-    </footer>
+    <div class="layout">
+        <header>
+            <div class="container">
+                <img src="/static/images/vtex_logo.webp" alt="VTEX Logo" class="logo">
+                <h1>Marketplace Externo</h1>
+            </div>
+        </header>
+        <main class="content">
+            <div class="container">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </main>
+        <footer>
+            <div class="container">
+                <p>© 2024 VTEX External Marketplace Integration</p>
+            </div>
+        </footer>
+    </div>
 </body>
 </html>

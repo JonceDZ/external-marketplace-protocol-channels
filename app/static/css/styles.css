@@ -1,42 +1,109 @@
+/* Estilos Generales */
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Rubik', sans-serif;
     margin: 0;
     padding: 0;
+    background-color: #F2F2F2;
+    color: #333333;
 }
 
-header, footer {
-    background-color: #333;
-    color: #fff;
-    padding: 10px;
-    text-align: center;
-}
-
-main {
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
     padding: 20px;
 }
 
-form {
-    max-width: 400px;
-    margin: 0 auto;
+/* Encabezado y Pie de Página */
+header, footer {
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #E6E6E6;
 }
 
-label {
+header .container, footer .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+header .logo {
+    height: 40px;
+}
+
+header h1 {
+    font-size: 24px;
+    color: #FF365F; /* VTEX Red */
+}
+
+footer p {
+    font-size: 14px;
+    color: #666666;
+}
+
+/* Títulos y Textos */
+h2 {
+    color: #FF365F;
+    margin-bottom: 20px;
+}
+
+h3 {
+    font-size: 18px;
+    margin: 10px 0;
+}
+
+p {
+    font-size: 14px;
+    color: #555555;
+}
+
+/* Formulario de Configuración */
+.config-form {
+    background-color: #FFFFFF;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
     display: block;
-    margin-top: 10px;
+    font-weight: 500;
+    margin-bottom: 5px;
 }
 
-input {
+.form-group input {
     width: 100%;
-    padding: 8px;
-    box-sizing: border-box;
-}
-
-button {
-    margin-top: 20px;
     padding: 10px;
-    width: 100%;
+    border: 1px solid #CCCCCC;
+    border-radius: 8px;
+    font-size: 14px;
 }
 
+.form-group input:focus {
+    border-color: #FF365F;
+    outline: none;
+}
+
+/* Botones */
+.btn {
+    display: inline-block;
+    background-color: #FF365F;
+    color: #FFFFFF;
+    padding: 12px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+}
+
+.btn:hover {
+    background-color: #E63457;
+}
+
+/* Grid de Productos */
 .product-grid {
     display: flex;
     flex-wrap: wrap;
@@ -44,20 +111,74 @@ button {
 }
 
 .product-card {
+    background-color: #FFFFFF;
+    border: 1px solid #E6E6E6;
+    border-radius: 8px;
+    padding: 15px;
     flex: 1 1 calc(25% - 40px);
     box-sizing: border-box;
-    border: 1px solid #ccc;
-    padding: 10px;
     text-align: center;
 }
 
 .product-card img {
     max-width: 100%;
     height: auto;
+    border-radius: 8px;
 }
 
+.product-card h3 {
+    color: #333333;
+}
+
+.product-card .price {
+    font-size: 16px;
+    color: #FF365F;
+    font-weight: 500;
+    margin-top: 10px;
+}
+
+/* Responsividad */
 @media (max-width: 768px) {
     .product-card {
         flex: 1 1 calc(50% - 40px);
     }
+}
+
+@media (max-width: 480px) {
+    header .container, footer .container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .product-card {
+        flex: 1 1 100%;
+    }
+}
+
+/* Contenedor principal con diseño Flexbox */
+.layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Asegura que abarque toda la pantalla */
+}
+
+/* El contenido ocupa el espacio disponible */
+.content {
+    flex: 1; /* Hace que el contenido crezca y empuje el footer hacia abajo */
+}
+
+/* Estilos generales del footer */
+footer {
+    background-color: #FFFFFF; /* Color de fondo VTEX */
+    color: #FFFFFF; /* Texto blanco */
+    display: flex; /* Usamos Flexbox para centrar el contenido */
+    justify-content: center; /* Centrar horizontalmente */
+    align-items: center; /* Centrar verticalmente */
+    text-align: center; /* Asegurar alineación de texto */
+    padding: 15px 0;
+}
+
+footer p {
+    margin: 0;
+    font-size: 14px;
 }

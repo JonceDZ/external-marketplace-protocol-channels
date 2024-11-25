@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Error</h2>
-<p>{{ message }}</p>
-<a href="/">Volver al inicio</a>
+<div class="error-page">
+    <h2>Error</h2>
+    <p>{{ message }}</p>
+    <a href="/" class="btn">Volver al inicio</a>
+</div>
 {% endblock %}

@@ -2,19 +2,27 @@
 
 {% block content %}
 <h2>Configuración Inicial</h2>
-<form action="/" method="post">
-    <label for="vtex_app_key">Ingrese la VTEX AppKey:</label>
-    <input type="text" id="vtex_app_key" name="vtex_app_key" required><br><br>
+<form action="/" method="post" class="config-form">
+    <div class="form-group">
+        <label for="vtex_app_key">VTEX AppKey:</label>
+        <input type="text" id="vtex_app_key" name="vtex_app_key" required>
+    </div>
 
-    <label for="vtex_app_token">Ingrese el VTEX AppToken:</label>
-    <input type="text" id="vtex_app_token" name="vtex_app_token" required><br><br>
+    <div class="form-group">
+        <label for="vtex_app_token">VTEX AppToken:</label>
+        <input type="text" id="vtex_app_token" name="vtex_app_token" required>
+    </div>
 
-    <label for="vtex_account_name">¿Cuál es el nombre de la cuenta?</label>
-    <input type="text" id="vtex_account_name" name="vtex_account_name" required><br><br>
+    <div class="form-group">
+        <label for="vtex_account_name">Nombre de la cuenta:</label>
+        <input type="text" id="vtex_account_name" name="vtex_account_name" required>
+    </div>
 
-    <label for="sales_channel_id">¿A qué política comercial se quiere asociar?</label>
-    <input type="number" id="sales_channel_id" name="sales_channel_id" required><br><br>
+    <div class="form-group">
+        <label for="sales_channel_id">Política comercial:</label>
+        <input type="number" id="sales_channel_id" name="sales_channel_id" required>
+    </div>
 
-    <button type="submit">Iniciar Sincronización</button>
+    <button type="submit" class="btn">Iniciar Sincronización</button>
 </form>
 {% endblock %}
