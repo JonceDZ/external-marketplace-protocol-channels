@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Marketplace Externo</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <!-- Importar la fuente Rubik de Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="layout">
+        <header>
+            <div class="container">
+                <img src="/static/images/vtex_logo.webp" alt="VTEX Logo" class="logo">
+                <h1>Marketplace Externo</h1>
+            </div>
+        </header>
+        <div class="main-content">
+            <aside class="sidebar">
+                <nav>
+                    <ul>
+                        <li><a href="/products" class="{% if request.url.path.startswith('/products') %}active{% endif %}">Productos</a></li>
+                        <li><a href="/orders" class="{% if request.url.path.startswith('/orders') %}active{% endif %}">Órdenes</a></li>
+                        <li><a href="/notifications" class="{% if request.url.path.startswith('/notifications') %}active{% endif %}">Notificaciones</a></li>
+                    </ul>
+                </nav>
+            </aside>
+            <main class="content">
+                {% block content %}
+                {% endblock %}
+            </main>
+        </div>
+        <footer>
+            <div class="container">
+                <p>© 2024 VTEX External Marketplace Integration</p>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
