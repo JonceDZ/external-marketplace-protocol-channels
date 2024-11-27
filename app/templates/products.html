@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "logged_in_base.html" %}
 
 {% block content %}
 <h2>Productos Disponibles</h2>
@@ -7,9 +7,8 @@
     <div class="product-card">
         <img src="{{ product.image_url }}" alt="{{ product.name }}">
         <h3>{{ product.name }}</h3>
-        <p>{{ product.product_description }}</p>
+        <!-- <p>{{ product.product_description }}</p> -->
         <p class="price">Precio: ${{ product.price }}</p>
-        <!-- Puedes añadir más detalles o botones si lo deseas -->
     </div>
     {% endfor %}
 </div>
