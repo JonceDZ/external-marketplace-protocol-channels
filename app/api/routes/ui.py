@@ -85,3 +85,11 @@ def update_env_file(**kwargs):
     with open(env_file_path, 'w') as f:
         for key, value in kwargs.items():
             f.write(f"{key}={value}\n")
+
+@router.get("/orders", response_class=HTMLResponse)
+async def show_orders(request: Request):
+    return templates.TemplateResponse("orders.html", {"request": request, "title": "Órdenes"})
+
+@router.get("/notifications", response_class=HTMLResponse)
+async def show_notifications(request: Request):
+    return templates.TemplateResponse("notifications.html", {"request": request, "title": "Notificaciones"})
